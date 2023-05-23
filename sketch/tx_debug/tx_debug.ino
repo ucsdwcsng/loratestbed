@@ -1,31 +1,31 @@
 /*
 
-Module:  raw-halconfig.ino
+  Module:  raw-halconfig.ino
 
-Function:
+  Function:
   Auto-configured raw test example, for Adafruit Feather M0 LoRa
 
-Copyright notice and License:
+  Copyright notice and License:
   See LICENSE file accompanying this project.
 
-Author:
+  Author:
     Matthijs Kooijman  2015
     Terry Moore, MCCI Corporation  2018
 
 */
 
 /*******************************************************************************
- * Copyright (c) 2015 Matthijs Kooijman
- *
- * Permission is hereby granted, free of charge, to anyone
- * obtaining a copy of this document and accompanying files,
- * to do whatever they want with them without any restriction,
- * including, but not limited to, copying, modification and redistribution.
- * NO WARRANTY OF ANY KIND IS PROVIDED.
- *
- * This example transmits data on hardcoded channel and receives data
- * when not transmitting. Running this sketch on two nodes should allow
- * them to communicate.
+   Copyright (c) 2015 Matthijs Kooijman
+
+   Permission is hereby granted, free of charge, to anyone
+   obtaining a copy of this document and accompanying files,
+   to do whatever they want with them without any restriction,
+   including, but not limited to, copying, modification and redistribution.
+   NO WARRANTY OF ANY KIND IS PROVIDED.
+
+   This example transmits data on hardcoded channel and receives data
+   when not transmitting. Running this sketch on two nodes should allow
+   them to communicate.
  *******************************************************************************/
 
 #include <lmic.h>
@@ -58,8 +58,8 @@ Author:
 #define NODE_IDX 42
 #define RSSI_RESET_VAL 128
 #define SCHEDULE_LEN 10
-#define FREQ_EXPT 904300000
-#define FREQ_CNFG 904300000
+#define FREQ_EXPT 915000000
+#define FREQ_CNFG 917000000
 #define RB_LEN 65
 
 // Pin mapping
@@ -119,7 +119,7 @@ byte buf_tx[16];
 // 18: {4bits txbw, 4bits rxbw}
 // 19: {4bits txcr, 4bits txcr}
 // 20: CAD Config Register {bit 0: Fixed DIFS Size, bit 1: LMAC CSMA}
-// 21: Listen before talk ticks (x16) 
+// 21: Listen before talk ticks (x16)
 // 22: Listen before talk max RSSI s1_t
 // 23: Kill CAD Wait time (0 or 1)
 //---------------------------------
@@ -174,13 +174,6 @@ void tx_spam(osjobcb_t func) {
   os_radio(RADIO_RST);
   // wait a bit so the radio can come out of RX mode
   delay(1);
-  // prepare data
-  LMIC.dataLen = reg_array[1];
-  LMIC.frame[0] = NODE_IDX;
-  LMIC.frame[1] = get_nth_byte(multi_tx_packet_ctr, 0);
-  LMIC.frame[2] = get_nth_byte(multi_tx_packet_ctr, 1);
-  LMIC.frame[3] = get_nth_byte(multi_tx_packet_ctr, 2);
-  
   // set completion function.
   LMIC.osjob.func = func;
   // start the transmission
@@ -189,17 +182,8 @@ void tx_spam(osjobcb_t func) {
 
 
 
-static void tx_spam_done (osjob_t* job){
-  multi_tx_packet_ctr = multi_tx_packet_ctr + 1;
-
-  if(multi_tx_packet_ctr>=1000){
-    1;
-  }
-  else{
-    os_setCallback(job, tx_spam_func);
-  }
-  
-  
+static void tx_spam_done (osjob_t* job) {
+  os_setCallback(job, tx_spam_func);
 }
 
 static void tx_spam_func (osjob_t* job) {
@@ -210,9 +194,10 @@ static void tx_spam_func (osjob_t* job) {
 
 
 
-static byte get_nth_byte(int number_in, byte idx){
-  return (number_in>>(idx*8));
+static byte get_nth_byte(int number_in, byte idx) {
+  return (number_in >> (idx * 8));
 }
+
 
 
 
@@ -225,32 +210,29 @@ void setup() {
 
   // disable RX IQ inversion
   LMIC.noRXIQinversion = true;
-  
-//  LMIC.rps = MAKERPS(SF8 , BW500, CR_4_8, 0, 0); // WCSNG
-//  LMIC.sysname_tx_rps =  MAKERPS(SF8 , BW500, CR_4_8, 0, 0); // WCSNG
-//  LMIC.sysname_cad_rps =  MAKERPS(SF8 , BW500, CR_4_8, 0, 0); // WCSNG
-  LMIC.rps = MAKERPS(SF10 , BW125, CR_4_8, 0, 0); // WCSNG
-  LMIC.sysname_tx_rps =  MAKERPS(SF10 , BW125, CR_4_8, 0, 0); // WCSNG
-  LMIC.sysname_cad_rps =  MAKERPS(SF10 , BW125, CR_4_8, 0, 0); // WCSNG
+
+  LMIC.rps = MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
+  LMIC.sysname_tx_rps =  MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
+  LMIC.sysname_cad_rps =  MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
   LMIC.txpow = 21;
   LMIC.radio_txpow = 21; // WCSNG
 
 
 
   // Set the generic TRX frequencies:
-  for(byte idx = 0;idx<24;idx++){
-      trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
+  for (byte idx = 0; idx < 24; idx++) {
+    trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
   }
 
-  freq_expt_ind = 0;
-  freq_cnfg_ind = 0; // 13
+  freq_expt_ind = 16;
+  freq_cnfg_ind = 18; // 13
   // Set the LMIC CAD Frequencies
   LMIC.freq = trx_freq_vec[freq_cnfg_ind]; // WCSNG
   LMIC.sysname_cad_freq_vec[0] = trx_freq_vec[freq_expt_ind];
-  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_expt_ind]-1000000;
-  LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind]-2000000;
-  LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind]-4000000;
-  
+  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_expt_ind] - 1000000;
+  LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind] - 2000000;
+  LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind] - 4000000;
+
 
   Serial.flush();
 
@@ -258,7 +240,7 @@ void setup() {
   interarrival_ind = 0;
   arbiter_state = 0; // Resting state
   multi_tx_packet_ctr = 0; // Resetting counter
-  
+
   reg_array[0] = 90;     // tx_interval
   reg_array[1] = 16;     // Packet Size Bytes
   reg_array[2] = 10;     // Experiment run length in seconds
@@ -275,38 +257,38 @@ void setup() {
   reg_array[19] = 51; // 19: {4bits txcr, 4bits txcr}
 
   reg_array[20] = 0;      // CAD Type and Config Reg
-  reg_array[21] = 0;      // Listen before talk ticks (x16) 
+  reg_array[21] = 0;      // Listen before talk ticks (x16)
   reg_array[22] = -90;    // Listen before talk max RSSI s1_t
   reg_array[23] = 1;      // Kill CAD Wait time (0 or 1)
 
   reg_array[45] = 10;    // Variance if using periodic scheduling
 
-//
+  //
   LMIC.sysname_kill_cad_delay  = 1; // Kill CAD Wait time (0 or 1)
-//
+  //
 
   // SPAM CONFIG
   LMIC.dataLen = 16;
-  for(int i = 0; i<LMIC.dataLen; i++)
+  for (int i = 0; i < LMIC.dataLen; i++)
     LMIC.frame[i] = i;
 
   //
 
-  for(byte idx = 0;idx<20;idx++)
-    reg_array[24+idx] = RSSI_RESET_VAL;
+  for (byte idx = 0; idx < 20; idx++)
+    reg_array[24 + idx] = RSSI_RESET_VAL;
 
   buf_in[0] == 0;
   buf_in[1] == 0;
   buf_in[2] == 0;
 
   // Say Hi
-  Serial.print("TX Spam: Hi I am Node ");
+  Serial.print("Hi I am Node ");
   Serial.print(NODE_IDX);
   Serial.print("\n");
 
   // setup initial job
   expt_start_time = os_getTime();
-  expt_stop_time = expt_start_time + ms2osticks(reg_array[2]*reg_array[3]*1000);
+  expt_stop_time = expt_start_time + ms2osticks(reg_array[2] * reg_array[3] * 1000);
   os_setCallback(&arbiter_job, tx_spam_func);
 
 }
