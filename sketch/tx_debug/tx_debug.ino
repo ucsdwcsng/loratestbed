@@ -151,23 +151,6 @@ u4_t global_cad_counter;
 u4_t global_lbt_counter;
 //
 
-// Transmit the given string and call the given function afterwards
-void tx(osjobcb_t func) {
-  // the radio is probably in RX mode; stop it.
-  os_radio(RADIO_RST);
-  // wait a bit so the radio can come out of RX mode
-  delay(1);
-  // prepare data
-  LMIC.dataLen = 4;
-  LMIC.frame[0] = buf_out[0];
-  LMIC.frame[1] = buf_out[1];
-  LMIC.frame[2] = buf_out[2];
-  LMIC.frame[3] = buf_out[3];
-  // set completion function.
-  LMIC.osjob.func = func;
-  // start the transmission
-  os_radio(RADIO_TX);
-}
 
 void tx_spam(osjobcb_t func) {
   // the radio is probably in RX mode; stop it.
