@@ -174,14 +174,9 @@ static void tx_spam_func (osjob_t* job) {
   tx_spam(tx_spam_done);
 }
 
-
-
-
 static byte get_nth_byte(int number_in, byte idx) {
   return (number_in >> (idx * 8));
 }
-
-
 
 
 // application entry point
@@ -200,8 +195,6 @@ void setup() {
   LMIC.txpow = 21;
   LMIC.radio_txpow = 21; // WCSNG
 
-
-
   // Set the generic TRX frequencies:
   for (byte idx = 0; idx < 24; idx++) {
     trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
@@ -215,7 +208,6 @@ void setup() {
   LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_expt_ind] - 1000000;
   LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind] - 2000000;
   LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind] - 4000000;
-
 
   Serial.flush();
 
@@ -251,10 +243,10 @@ void setup() {
   //
 
   // SPAM CONFIG
-  LMIC.dataLen = 16;
-  for (int i = 0; i < LMIC.dataLen; i++)
+  LMIC.dataLen = 2;
+  for (int i = 0; i < LMIC.dataLen; i++){
     LMIC.frame[i] = i;
-
+  }
   //
 
   for (byte idx = 0; idx < 20; idx++)
@@ -273,7 +265,6 @@ void setup() {
   expt_start_time = os_getTime();
   expt_stop_time = expt_start_time + ms2osticks(reg_array[2] * reg_array[3] * 1000);
   os_setCallback(&arbiter_job, tx_spam_func);
-
 }
 
 void loop() {
