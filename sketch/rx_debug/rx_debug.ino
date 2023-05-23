@@ -1,32 +1,3 @@
-/*
-
-  Module:  raw-halconfig.ino
-
-  Function:
-  Auto-configured raw test example, for Adafruit Feather M0 LoRa
-
-  Copyright notice and License:
-  See LICENSE file accompanying this project.
-
-  Author:
-    Matthijs Kooijman  2015
-    Terry Moore, MCCI Corporation  2018
-
-*/
-
-/*******************************************************************************
-   Copyright (c) 2015 Matthijs Kooijman
-
-   Permission is hereby granted, free of charge, to anyone
-   obtaining a copy of this document and accompanying files,
-   to do whatever they want with them without any restriction,
-   including, but not limited to, copying, modification and redistribution.
-   NO WARRANTY OF ANY KIND IS PROVIDED.
-
-   This example transmits data on hardcoded channel and receives data
-   when not transmitting. Running this sketch on two nodes should allow
-   them to communicate.
- *******************************************************************************/
 
 #include <lmic.h>
 #include <hal/hal.h>
@@ -119,7 +90,7 @@ byte buf_tx[16];
 // 18: {4bits txbw, 4bits rxbw}
 // 19: {4bits txcr, 4bits txcr}
 // 20: CAD Config Register {bit 0: Fixed DIFS Size, bit 1: LMAC CSMA}
-// 21: Listen before talk ticks (x16)
+// 21: Listen before talk ticks (x16) 
 // 22: Listen before talk max RSSI s1_t
 // 23: Kill CAD Wait time (0 or 1)
 //---------------------------------
@@ -152,29 +123,60 @@ u4_t global_lbt_counter;
 //
 
 
-void tx_spam(osjobcb_t func) {
-  // the radio is probably in RX mode; stop it.
-  os_radio(RADIO_RST);
-  // wait a bit so the radio can come out of RX mode
-  delay(1);
-  // set completion function.
+// Enable rx mode and call func when a packet is received
+void rx(osjobcb_t func) {
   LMIC.osjob.func = func;
-  // start the transmission
-  os_radio(RADIO_TX);
+  LMIC.rxtime = os_getTime(); // RX _now_
+  // Enable "continuous" RX (e.g. without a timeout, still stops after
+  // receiving a packet)
+
+  os_radio(RADIO_RXON);
 }
 
 
-static void tx_spam_done (osjob_t* job) {
-  os_setCallback(job, tx_spam_func);
+
+static void rxdone_func (osjob_t* job) {
+   // Blink once to confirm reception and then keep the led on
+  digitalWrite(LED_BUILTIN, LOW); // off
+  delay(1);
+  digitalWrite(LED_BUILTIN, HIGH); // on
+
+  buf_in[0] = LMIC.frame[0];
+  buf_in[1] = LMIC.frame[1];
+  buf_in[2] = LMIC.frame[2];
+  buf_in[3] = LMIC.frame[3];
+
+  Serial.print("[");
+  Serial.print(buf_in[0]);
+  Serial.print(",");
+  Serial.print(buf_in[1]);
+  Serial.print(",");
+  Serial.print(buf_in[2]);
+  Serial.print(",");
+  Serial.print(buf_in[3]);
+  Serial.print("]");
+  Serial.print(";");
+  
+  Serial.print("RSSI: ");
+  Serial.print(LMIC.rssi);
+  Serial.print("; ");
+
+  Serial.print("CRC: ");
+  Serial.print(LMIC.sysname_crc_err);
+  Serial.print("\n");
+  
+  // Arbiter
+  os_setCallback(job, rx_func);
+  
 }
 
-static void tx_spam_func (osjob_t* job) {
-  // Send BUF OUT
-  tx_spam(tx_spam_done);
+static void rx_func (osjob_t* job) {
+  // GET BUF_OUT
+  rx(rxdone_func);
 }
 
-static byte get_nth_byte(int number_in, byte idx) {
-  return (number_in >> (idx * 8));
+static byte get_nth_byte(int number_in, byte idx){
+  return (number_in>>(idx*8));
 }
 
 
@@ -187,16 +189,18 @@ void setup() {
 
   // disable RX IQ inversion
   LMIC.noRXIQinversion = true;
-
+  
   LMIC.rps = MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
   LMIC.sysname_tx_rps =  MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
   LMIC.sysname_cad_rps =  MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
   LMIC.txpow = 21;
   LMIC.radio_txpow = 21; // WCSNG
 
+
+
   // Set the generic TRX frequencies:
-  for (byte idx = 0; idx < 24; idx++) {
-    trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
+  for(byte idx = 0;idx<24;idx++){
+      trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
   }
 
   freq_expt_ind = 16;
@@ -204,9 +208,10 @@ void setup() {
   // Set the LMIC CAD Frequencies
   LMIC.freq = trx_freq_vec[freq_cnfg_ind]; // WCSNG
   LMIC.sysname_cad_freq_vec[0] = trx_freq_vec[freq_expt_ind];
-  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_expt_ind] - 1000000;
-  LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind] - 2000000;
-  LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind] - 4000000;
+  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_expt_ind]-1000000;
+  LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind]-2000000;
+  LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind]-4000000;
+  
 
   Serial.flush();
 
@@ -214,7 +219,7 @@ void setup() {
   interarrival_ind = 0;
   arbiter_state = 0; // Resting state
   multi_tx_packet_ctr = 0; // Resetting counter
-
+  
   reg_array[0] = 90;     // tx_interval
   reg_array[1] = 16;     // Packet Size Bytes
   reg_array[2] = 10;     // Experiment run length in seconds
@@ -231,25 +236,25 @@ void setup() {
   reg_array[19] = 51; // 19: {4bits txcr, 4bits txcr}
 
   reg_array[20] = 0;      // CAD Type and Config Reg
-  reg_array[21] = 0;      // Listen before talk ticks (x16)
+  reg_array[21] = 0;      // Listen before talk ticks (x16) 
   reg_array[22] = -90;    // Listen before talk max RSSI s1_t
   reg_array[23] = 1;      // Kill CAD Wait time (0 or 1)
 
   reg_array[45] = 10;    // Variance if using periodic scheduling
 
-  //
+//
   LMIC.sysname_kill_cad_delay  = 1; // Kill CAD Wait time (0 or 1)
-  //
+//
 
   // SPAM CONFIG
-  LMIC.dataLen = 2;
-  for (int i = 0; i < LMIC.dataLen; i++){
-    LMIC.frame[i] = i;
-  }
+  LMIC.dataLen = 16;
+  for(int i = 0; i<LMIC.dataLen; i++)
+    LMIC.frame[i] = 0;
+
   //
 
-  for (byte idx = 0; idx < 20; idx++)
-    reg_array[24 + idx] = RSSI_RESET_VAL;
+  for(byte idx = 0;idx<20;idx++)
+    reg_array[24+idx] = RSSI_RESET_VAL;
 
   buf_in[0] == 0;
   buf_in[1] == 0;
@@ -262,11 +267,27 @@ void setup() {
 
   // setup initial job
   expt_start_time = os_getTime();
-  expt_stop_time = expt_start_time + ms2osticks(reg_array[2] * reg_array[3] * 1000);
-  os_setCallback(&arbiter_job, tx_spam_func);
+  expt_stop_time = expt_start_time + ms2osticks(reg_array[2]*reg_array[3]*1000);
+  os_setCallback(&arbiter_job, rx_func);
+
 }
 
 void loop() {
   // execute scheduled jobs and events
   os_runloop_once();
 }
+
+
+//float sum_var = 0;
+//float ind_var = 1;
+//trash:
+//  u4_t rand_var = get_wait_time_ms();
+//  sum_var += rand_var;
+//  Serial.print(ind_var);
+//  Serial.print(": ");
+//  Serial.print(rand_var);
+//  Serial.print(", ");
+//  Serial.print(sum_var/ind_var);
+//  Serial.print("\n");
+////  delay(10);
+//  ind_var++;
