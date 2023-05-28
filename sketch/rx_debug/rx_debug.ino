@@ -196,8 +196,6 @@ void setup() {
   LMIC.txpow = 21;
   LMIC.radio_txpow = 21; // WCSNG
 
-
-
   // Set the generic TRX frequencies:
   for(byte idx = 0;idx<24;idx++){
       trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
@@ -242,9 +240,7 @@ void setup() {
 
   reg_array[45] = 10;    // Variance if using periodic scheduling
 
-//
   LMIC.sysname_kill_cad_delay  = 1; // Kill CAD Wait time (0 or 1)
-//
 
   // SPAM CONFIG
   LMIC.dataLen = 16;
@@ -276,18 +272,3 @@ void loop() {
   // execute scheduled jobs and events
   os_runloop_once();
 }
-
-
-//float sum_var = 0;
-//float ind_var = 1;
-//trash:
-//  u4_t rand_var = get_wait_time_ms();
-//  sum_var += rand_var;
-//  Serial.print(ind_var);
-//  Serial.print(": ");
-//  Serial.print(rand_var);
-//  Serial.print(", ");
-//  Serial.print(sum_var/ind_var);
-//  Serial.print("\n");
-////  delay(10);
-//  ind_var++;
