@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "loratestbed"
+version = "0.1.0"
+description = ""
+authors = ["Abijit Jayachandran <ajayachandran@ucsd.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pyserial = "^3.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
