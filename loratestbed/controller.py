@@ -33,7 +33,7 @@ class SerialInterface:
 
     def _write_read_bytes(self, data: bytes):
         self._write_bytes(data)
-        self._read_bytes(len(data))
+        return self._read_bytes(len(data))
 
 
 
