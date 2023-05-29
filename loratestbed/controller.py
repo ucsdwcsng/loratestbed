@@ -1,5 +1,6 @@
 import serial
 from typing import List, Tuple
+import utils
 import logging
 
 
@@ -19,7 +20,8 @@ class SerialInterface:
 
     def _flush(self):
         # This function flushes input and output buffers
-        pass
+        self._serial_port.reset_input_buffer()
+        self._serial_port.reset_output_buffer()  
 
     def _set_read_timeout(self, timeout: float):
         # This function sets the timeout for read operations
@@ -47,14 +49,24 @@ class SerialInterface:
 class ControllerManager:
     def __init__(self, serial_port: str) -> None:
         self._serial_interface = SerialInterface(serial_port)
-
         pass
 
     def ping(self) -> None:
         pass
 
+    # Frequency is given in MHz
     def tune_frequency(self, frequency: float) -> float:
-        pass
+        if(frequency < 904 or frequency > 927):
+            self._serial_interface._logger.warning("The frequency is not in the valid range")
+            return 0.0
+        if(frequency is not int):
+            self._serial_interface._logger.warning("The frequency is not valid so it will be rounded to the nearest MHz")
+
+        validFreq = int(frequency) 
+        freqIndex = validFreq - 904
+        indexInBytes = utils.uint8_to_bytes(freqIndex);    
+        self._serial_interface._write_bytes(b"\x05" + indexInBytes + b"\x00\x00\x00")
+        return validFreq; 
 
     def read_register(self, register: int) -> int:
         pass
