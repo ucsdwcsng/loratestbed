@@ -47,13 +47,31 @@ class LoRaRegister(Enum):
 
     # # Node Index
     # NODE_IDX = list(range(24, 45))  # Registers 24 to 44 are for node indexes
+    # Node Indices
+    NODE_IDX_0 = 24
+    NODE_IDX_1 = 25
+    NODE_IDX_2 = 26
+    NODE_IDX_3 = 27
+    NODE_IDX_4 = 28
+    NODE_IDX_5 = 29
+    NODE_IDX_6 = 30
+    NODE_IDX_7 = 31
+    NODE_IDX_8 = 32
+    NODE_IDX_9 = 33
+    NODE_IDX_10 = 34
+    NODE_IDX_11 = 35
+    NODE_IDX_12 = 36
+    NODE_IDX_13 = 37
+    NODE_IDX_14 = 38
+    NODE_IDX_15 = 39
+    NODE_IDX_16 = 40
+    NODE_IDX_17 = 41
+    NODE_IDX_18 = 42
+    NODE_IDX_19 = 43
+    NODE_IDX_20 = 44
 
     # Other
     PERIODIC_TX_VARIANCE_X10_MS = 45
-
-
-for i in range(21):
-    LoRaRegister[f"NODE_IDX_{i}"] = i + 24
 
 
 class DeviceManager:
