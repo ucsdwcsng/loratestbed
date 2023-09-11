@@ -126,6 +126,14 @@ class DeviceManager:
         )
         return read_bytes_int
 
+    def _read_clear_device_reg(self, device_idx: int, reg: LoRaRegister) -> int:
+        # Read and clear device register
+        message_to_send = [5, reg.value, 0]
+        read_bytes_int: List[int] = self._send_message_to_device(
+            device_idx, message_to_send
+        )
+        return read_bytes_int
+
     def _write_device_reg(self, device_idx: int, reg: LoRaRegister, value: int) -> int:
         # convert input to bytes:
         message_to_send = [2, reg.value, value]
@@ -154,3 +162,40 @@ class DeviceManager:
             for reg_id in LoRaRegister:
                 ret_int_list = self._read_device_reg(device_idx, reg_id)
                 self._device_states[id, reg_id.value] = ret_int_list[-1]
+
+    def set_experiment_time_sec(self, time_sec: int):
+        expt_time_multiplier: int = time_sec // 256 + 1
+        expt_time_seconds: int = int(time_sec / expt_time_multiplier)
+
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.EXPERIMENT_TIME_SECONDS, expt_time_seconds
+            )
+            self._write_device_reg(
+                device_idx,
+                LoRaRegister.EXPERIMENT_TIME_MULTIPLIER,
+                expt_time_multiplier,
+            )
+
+    def get_results_registers(self):
+        result_registers = [
+            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_0,
+            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_1,
+            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_2,
+            LoRaRegister.RESULT_COUNTER_BYTE_0,
+            LoRaRegister.RESULT_COUNTER_BYTE_1,
+            LoRaRegister.RESULT_COUNTER_BYTE_2,
+            LoRaRegister.RESULT_LBT_COUNTER_BYTE_0,
+            LoRaRegister.RESULT_LBT_COUNTER_BYTE_1,
+            LoRaRegister.RESULT_LBT_COUNTER_BYTE_2,
+        ]
+
+        results = np.zeros((self._num_devices, len(result_registers)), dtype=np.uint8)
+
+        for id, device_idx in enumerate(self._device_idxs):
+            for reg_id in result_registers:
+                # TODO: make this read clear
+                ret_int_list = self._read_device_reg(device_idx, reg_id)
+                results[id, reg_id.value] = ret_int_list[-1]
+
+        return results
