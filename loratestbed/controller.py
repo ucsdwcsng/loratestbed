@@ -1,7 +1,9 @@
 import serial
 from typing import List, Tuple
-import utils
+import loratestbed.utils as utils
 import logging
+import numpy as np
+from enum import Enum
 
 
 class SerialInterface:
@@ -21,7 +23,7 @@ class SerialInterface:
     def _flush(self):
         # This function flushes input and output buffers
         self._serial_port.reset_input_buffer()
-        self._serial_port.reset_output_buffer()  
+        self._serial_port.reset_output_buffer()
 
     def _set_read_timeout(self, timeout: float):
         # This function sets the timeout for read operations
@@ -56,17 +58,21 @@ class ControllerManager:
 
     # Frequency is given in MHz
     def tune_frequency(self, frequency: float) -> float:
-        if(frequency < 904 or frequency > 927):
-            self._serial_interface._logger.warning("The frequency is not in the valid range")
+        if frequency < 904 or frequency > 927:
+            self._serial_interface._logger.warning(
+                "The frequency is not in the valid range"
+            )
             return 0.0
-        if(frequency is not int):
-            self._serial_interface._logger.warning("The frequency is not valid so it will be rounded to the nearest MHz")
+        if frequency is not int:
+            self._serial_interface._logger.warning(
+                "The frequency is not valid so it will be rounded to the nearest MHz"
+            )
 
-        validFreq = int(frequency) 
+        validFreq = int(frequency)
         freqIndex = validFreq - 904
-        indexInBytes = utils.uint8_to_bytes(freqIndex);    
+        indexInBytes = utils.uint8_to_bytes(freqIndex)
         self._serial_interface._write_bytes(b"\x05" + indexInBytes + b"\x00\x00\x00")
-        return validFreq; 
+        return validFreq
 
     def read_register(self, register: int) -> int:
         pass

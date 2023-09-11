@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from loratestbed.controller import SerialInterface
+from loratestbed.device_manager import DeviceManager
 
 
 def main():
@@ -17,9 +18,16 @@ def main():
     PORT = args["port"]
     interface = SerialInterface(PORT)
 
-    read_bytes = interface._write_read_bytes(b"\x00\x00\x00\x00\x00")
+    # # Create a message 1, 33, 0,0,0
+    # message = b"\x01\x21\x00\x00\x00"
 
-    logging.info(f"Read {read_bytes} from serial port")
+    # # read_bytes = interface._write_read_bytes(b"\x00\x00\x00\x00\x00")
+    # logging.info(f"Writing {message} to serial port")
+    # read_bytes = interface._write_read_bytes(message)
+
+    # logging.info(f"Read {read_bytes} from serial port")
+    device_manager = DeviceManager([33], interface)
+    device_manager._ping_devices(33)
 
 
 if __name__ == "__main__":
