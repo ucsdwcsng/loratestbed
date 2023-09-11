@@ -1,6 +1,6 @@
 import argparse
 import logging
-
+import pdb
 from loratestbed.controller import SerialInterface
 from loratestbed.device_manager import DeviceManager
 
@@ -19,6 +19,8 @@ def main():
     interface = SerialInterface(PORT)
 
     device_manager = DeviceManager([26, 33], interface)
+
+    pdb.set_trace()
     # device_manager._ping_devices(33)
 
 

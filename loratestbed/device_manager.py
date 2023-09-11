@@ -88,6 +88,7 @@ class DeviceManager:
         self._device_states = np.zeros(
             (self._num_devices, REG_ARRAY_LENGTH), dtype=np.uint8
         )
+        self._read_all_device_regs(self._device_idxs)
 
     def _send_message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
@@ -151,5 +152,5 @@ class DeviceManager:
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
-                ret_int_list = self._read_device_reg(device_idx, reg_id.value)
+                ret_int_list = self._read_device_reg(device_idx, reg_id)
                 self._device_states[id, reg_id.value] = ret_int_list[-1]
