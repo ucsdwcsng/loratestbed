@@ -88,7 +88,7 @@ class DeviceManager:
         )
 
         # Convert each read byte to int:
-        read_bytes_int: List[int] = [utils.bytes_to_uint8(b) for b in read_bytes]
+        read_bytes_int: List[int] = [utils.bytes_to_uint8([b]) for b in read_bytes]
         if read_bytes_int[1] == 255:
             self._logger.critical(f"Readback error, got illegal: {read_bytes_int}")
             return None
