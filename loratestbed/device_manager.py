@@ -45,11 +45,15 @@ class LoRaRegister(Enum):
     LBT_MAX_RSSI_S1_T = 22  # Listen before talk max RSSI s1_t
     KILL_CAD_WAIT_TIME = 23  # (0 or 1)
 
-    # Node Index
-    NODE_IDX = list(range(24, 45))  # Registers 24 to 44 are for node indexes
+    # # Node Index
+    # NODE_IDX = list(range(24, 45))  # Registers 24 to 44 are for node indexes
 
     # Other
     PERIODIC_TX_VARIANCE_X10_MS = 45
+
+
+for i in range(21):
+    LoRaRegister[f"NODE_IDX_{i}"] = i + 24
 
 
 class DeviceManager:
@@ -62,14 +66,10 @@ class DeviceManager:
         self._num_devices: int = len(device_idxs)
         self._serial_interface = serial_interface
 
-        # Ping all devices
-        self._ping_devices(self._device_idxs)
-
         # TODO: device states should be initialized by reading the devices themselves
         self._device_states = np.zeros(
             (self._num_devices, REG_ARRAY_LENGTH), dtype=np.uint8
         )
-        self._read_all_device_regs(self._device_idxs)
 
     def _send_message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
@@ -133,5 +133,5 @@ class DeviceManager:
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
-                ret_int_list = self._read_device_reg(device_idx, reg_id)
+                ret_int_list = self._read_device_reg(device_idx, reg_id.value)
                 self._device_states[id, reg_id.value] = ret_int_list[-1]
