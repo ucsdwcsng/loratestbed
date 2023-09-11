@@ -58,7 +58,7 @@ class DeviceManager:
     ) -> None:
         self._logger = logging.getLogger(__name__)
 
-        self._device_idxs: List[int] = []
+        self._device_idxs: List[int] = device_idxs
         self._num_devices: int = len(device_idxs)
         self._serial_interface = serial_interface
 
