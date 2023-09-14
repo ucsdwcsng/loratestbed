@@ -12,6 +12,12 @@ This code will run a 20 second experiment with only device no. 33 and retrieve t
 
 ## Setup and installation
 
+### Setting up the testbed
+
+[Click here](./sketch/README.md) to go to the documentation on flashing various components in the testbed and bringing them up.
+
+### Host software
+
 Install poetry
 
 ```bash
