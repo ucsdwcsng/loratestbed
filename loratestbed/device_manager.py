@@ -112,7 +112,7 @@ class DeviceManager:
 
         # Convert each read byte to int:
         read_bytes_int: List[int] = [utils.bytes_to_uint8([b]) for b in read_bytes]
-        if read_bytes_int[1] == 255:
+        if read_bytes_int[1] == 255 and device_idx != 255:
             self._logger.critical(f"Readback error, got illegal: {read_bytes_int}")
             return None
 
@@ -162,6 +162,11 @@ class DeviceManager:
             for reg_id in LoRaRegister:
                 ret_int_list = self._read_device_reg(device_idx, reg_id)
                 self._device_states[id, reg_id.value] = ret_int_list[-1]
+
+    def trigger_all_devices(self):
+        self._send_message_to_device(255, [10, 0, 0])
+        self._send_message_to_device(255, [10, 0, 0])
+        return self._send_message_to_device(255, [10, 0, 0])
 
     def set_experiment_time_sec(self, time_sec: int):
         expt_time_multiplier: int = time_sec // 256 + 1
