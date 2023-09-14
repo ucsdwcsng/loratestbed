@@ -74,6 +74,19 @@ class LoRaRegister(Enum):
     PERIODIC_TX_VARIANCE_X10_MS = 45
 
 
+RESULT_REGISTERS = [
+    LoRaRegister.RESULT_COUNTER_BYTE_0,
+    LoRaRegister.RESULT_COUNTER_BYTE_1,
+    LoRaRegister.RESULT_COUNTER_BYTE_2,
+    LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_0,
+    LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_1,
+    LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_2,
+    LoRaRegister.RESULT_LBT_COUNTER_BYTE_0,
+    LoRaRegister.RESULT_LBT_COUNTER_BYTE_1,
+    LoRaRegister.RESULT_LBT_COUNTER_BYTE_2,
+]
+
+
 class DeviceManager:
     def __init__(
         self, device_idxs: List[int], serial_interface: SerialInterface
@@ -84,13 +97,13 @@ class DeviceManager:
         self._num_devices: int = len(device_idxs)
         self._serial_interface = serial_interface
 
-        # TODO: device states should be initialized by reading the devices themselves
+        # Device states initialized by reading the devices themselves
         self._device_states = np.zeros(
             (self._num_devices, REG_ARRAY_LENGTH), dtype=np.uint8
         )
         self._read_all_device_regs(self._device_idxs)
 
-    def _send_message_to_device(self, device_idx: int, message: List[int]):
+    def _message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
         if device_idx not in self._device_idxs:
             self._logger.warning(f"Device index {device_idx} not in list of devices")
@@ -118,28 +131,26 @@ class DeviceManager:
 
         return read_bytes_int
 
-    def _read_device_reg(self, device_idx: int, reg: LoRaRegister) -> int:
+    def _device_reg(self, device_idx: int, reg: LoRaRegister) -> int:
         # convert input to bytes:
         message_to_send = [1, reg.value, 0]
-        read_bytes_int: List[int] = self._send_message_to_device(
-            device_idx, message_to_send
-        )
+        read_bytes_int: List[int] = self._message_to_device(device_idx, message_to_send)
         return read_bytes_int
 
-    def _read_clear_device_reg(self, device_idx: int, reg: LoRaRegister) -> int:
-        # Read and clear device register
+    def _clear_device_reg(self, device_idx: int, reg: LoRaRegister) -> int:
+        # Readback value from register, then set it to zero (clear)
+        if reg not in RESULT_REGISTERS:
+            self._logger.warning(f"Register {reg} cannot be cleared, aborting")
+            return None
+
         message_to_send = [5, reg.value, 0]
-        read_bytes_int: List[int] = self._send_message_to_device(
-            device_idx, message_to_send
-        )
+        read_bytes_int: List[int] = self._message_to_device(device_idx, message_to_send)
         return read_bytes_int
 
     def _write_device_reg(self, device_idx: int, reg: LoRaRegister, value: int) -> int:
         # convert input to bytes:
         message_to_send = [2, reg.value, value]
-        read_bytes_int: List[int] = self._send_message_to_device(
-            device_idx, message_to_send
-        )
+        read_bytes_int: List[int] = self._message_to_device(device_idx, message_to_send)
         if (read_bytes_int is not None) and read_bytes_int[-1] != value:
             self._logger.critical(f"Tried to write {value}, got {read_bytes_int[-1]}")
         return read_bytes_int
@@ -148,27 +159,35 @@ class DeviceManager:
         # check if list, if not make into list:
         if not isinstance(device_idxs, list):
             device_idxs = [device_idxs]
-
+        pingable_devices = []
         for device_idx in device_idxs:
-            ret_list = self._send_message_to_device(device_idx, [0, 0, 0])
+            ret_list = self._message_to_device(device_idx, [0, 0, 0])
             # TODO: logic to update device list if a device is not ping-able
             if ret_list is None:
                 self._logger.critical(f"Device {device_idx} did not respond to ping")
+            else:
+                pingable_devices.append(device_idx)
+        return pingable_devices
 
     def _read_all_device_regs(self, device_idxs: List[int]):
         if not isinstance(device_idxs, list):
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
-                ret_int_list = self._read_device_reg(device_idx, reg_id)
+                ret_int_list = self._device_reg(device_idx, reg_id)
                 self._device_states[id, reg_id.value] = ret_int_list[-1]
 
-    def trigger_all_devices(self):
-        self._send_message_to_device(255, [10, 0, 0])
-        self._send_message_to_device(255, [10, 0, 0])
-        return self._send_message_to_device(255, [10, 0, 0])
+    def disable_all_devices(self):
+        # Disable all devices by broadcasting 0 experiment time
+        self._write_device_reg(255, LoRaRegister.EXPERIMENT_TIME_SECONDS, 0)
+        self._write_device_reg(255, LoRaRegister.EXPERIMENT_TIME_SECONDS, 0)
 
-    def set_experiment_time_sec(self, time_sec: int):
+    def trigger_all_devices(self):
+        self._message_to_device(255, [10, 0, 0])
+        self._message_to_device(255, [10, 0, 0])
+        return self._message_to_device(255, [10, 0, 0])
+
+    def set_experiment_time_seconds(self, time_sec: int):
         expt_time_multiplier: int = time_sec // 256 + 1
         expt_time_seconds: int = int(time_sec / expt_time_multiplier)
 
@@ -182,25 +201,31 @@ class DeviceManager:
                 expt_time_multiplier,
             )
 
-    def get_results_registers(self):
+    def result_registers_from_device(self):
         result_registers = [
-            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_0,
-            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_1,
-            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_2,
             LoRaRegister.RESULT_COUNTER_BYTE_0,
             LoRaRegister.RESULT_COUNTER_BYTE_1,
             LoRaRegister.RESULT_COUNTER_BYTE_2,
+            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_0,
+            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_1,
+            LoRaRegister.RESULT_BACKOFF_COUNTER_BYTE_2,
             LoRaRegister.RESULT_LBT_COUNTER_BYTE_0,
             LoRaRegister.RESULT_LBT_COUNTER_BYTE_1,
             LoRaRegister.RESULT_LBT_COUNTER_BYTE_2,
         ]
 
-        results = np.zeros((self._num_devices, len(result_registers)), dtype=np.uint8)
+        results = np.zeros((self._num_devices, len(result_registers)), dtype=np.float32)
 
         for id, device_idx in enumerate(self._device_idxs):
             for reg_id in result_registers:
                 # TODO: make this read clear
-                ret_int_list = self._read_device_reg(device_idx, reg_id)
+                ret_int_list = self._device_reg(device_idx, reg_id)
                 results[id, reg_id.value] = ret_int_list[-1]
 
-        return results
+        # Add the byte registers together to get the full result
+        for i in range(0, 9, 3):
+            results[:, i] = (
+                results[:, i] + 256 * results[:, i + 1] + 256 * 256 * results[:, i + 2]
+            )
+
+        return results[:, ::3]
