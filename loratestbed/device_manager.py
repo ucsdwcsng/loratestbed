@@ -105,7 +105,7 @@ class DeviceManager:
 
     def _message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
-        if device_idx not in self._device_idxs:
+        if device_idx not in self._device_idxs and device_idx != 255:
             self._logger.warning(f"Device index {device_idx} not in list of devices")
             return None
 
@@ -217,10 +217,10 @@ class DeviceManager:
         results = np.zeros((self._num_devices, len(result_registers)), dtype=np.float32)
 
         for id, device_idx in enumerate(self._device_idxs):
-            for reg_id in result_registers:
+            for reg_series, reg_id in enumerate(result_registers):
                 # TODO: make this read clear
                 ret_int_list = self._device_reg(device_idx, reg_id)
-                results[id, reg_id.value] = ret_int_list[-1]
+                results[id, reg_series] = ret_int_list[-1]
 
         # Add the byte registers together to get the full result
         for i in range(0, 9, 3):

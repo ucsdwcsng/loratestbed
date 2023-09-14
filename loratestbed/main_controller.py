@@ -24,7 +24,7 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
 
-    device_list = [26, 33]
+    device_list = [ 33]
     experiment_time = 20
 
     interface = SerialInterface(args.port)
