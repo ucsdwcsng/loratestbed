@@ -187,6 +187,7 @@ class DeviceManager:
         self._message_to_device(255, [10, 0, 0])
         return self._message_to_device(255, [10, 0, 0])
 
+    # Setting total experiment time in seconds
     def set_experiment_time_seconds(self, time_sec: int):
         expt_time_multiplier: int = time_sec // 256 + 1
         expt_time_seconds: int = int(time_sec / expt_time_multiplier)
@@ -199,6 +200,31 @@ class DeviceManager:
                 device_idx,
                 LoRaRegister.EXPERIMENT_TIME_MULTIPLIER,
                 expt_time_multiplier,
+            )
+
+    # Setting transmit time interval in milliseconds
+    def set_transmit_interval_milliseconds(self, time_interval_msec: int):
+        tx_interval_multiplier: int = time_interval_msec // 256 + 1
+        tx_interval_milliseconds: int = int(time_interval_msec / tx_interval_multiplier)
+
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.TX_INTERVAL_GLOBAL, tx_interval_milliseconds
+            )
+            self._write_device_reg(
+                device_idx,
+                LoRaRegister.TX_INTERVAL_MULTIPLIER,
+                tx_interval_multiplier,
+            )
+
+    # Setting scheduler interval mode
+    def set_scheduler_interval_mode(self, scehduler_interval_mode: int):
+        if scehduler_interval_mode not in (0,1,2):
+            raise ValueError("Scheduler interval mode must be in (0, 1, 2)")
+            
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.SCHEDULER_INTERVAL_MODE, scehduler_interval_mode
             )
 
     def result_registers_from_device(self):
