@@ -24,7 +24,7 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
 
-    device_list = [33]
+    device_list = [26]
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     experiment_time_sec = 30
     transmit_interval_msec = 500
@@ -44,6 +44,7 @@ def main():
     logging.info("Waiting for experiment to finish...")
     time.sleep(experiment_time_sec + 3)
 
+'''
     logging.info("Pinging devices")
     pingable_devices = device_manager._ping_devices(device_list)
 
@@ -54,7 +55,12 @@ def main():
 
     for id, device_idx in enumerate(device_list):
         logging.info(f"Device {device_idx} sent {result_mat[id, 0]:.0f} packets")
+<<<<<<< Updated upstream
 
 # starts from here
+=======
+'''
+
+>>>>>>> Stashed changes
 if __name__ == "__main__":
     main()
