@@ -131,7 +131,7 @@ static void rx_func (osjob_t* job) {
 
 // application entry point
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(2000000);
   pinMode(LED_BUILTIN, OUTPUT);
   // initialize runtime env
   os_init();
