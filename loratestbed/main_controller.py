@@ -55,6 +55,6 @@ def main():
     for id, device_idx in enumerate(device_list):
         logging.info(f"Device {device_idx} sent {result_mat[id, 0]:.0f} packets")
 
-
+# starts from here
 if __name__ == "__main__":
     main()
