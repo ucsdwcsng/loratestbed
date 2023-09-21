@@ -13,7 +13,7 @@ def make_parser():
 
     return ap
 
-
+# main function
 def main():
     logging.basicConfig(
         format="[%(asctime)s] [%(levelname)s] %(message)s",
