@@ -37,7 +37,7 @@ def main():
     logging.info("Waiting for experiment to finish...")
     time.sleep(experiment_time + 3)
 
-    logging.info("Pinging devices")
+    logging.info("Pinging devices..")
     pingable_devices = device_manager._ping_devices(device_list)
 
     assert pingable_devices == device_list, "Not all devices responded to ping"
