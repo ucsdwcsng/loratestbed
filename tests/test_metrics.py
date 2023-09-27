@@ -26,9 +26,11 @@ def test_read_packet_trace():
 def test_metrics():
     packet_trace = read_packet_trace(FULL_PATH_FILENAME)
 
-    missing_pack_dict = {25: 29, 26: 12, 28: 18, 29: 15, 32: 44, 34: 16}
+    missing_pack_dict = {25: 30, 26: 14, 28: 18, 29: 15, 32: 44, 34: 16}
 
-    metrics = metrics_from_trace(packet_trace)
+    total_pack_dict = {25: 60, 26: 60, 28: 60, 29: 60, 32: 60, 34: 60}
+
+    metrics = metrics_from_trace(packet_trace, total_pack_dict)
     print()
     print(f"Node ID  | Missing")
     for node_id in metrics:

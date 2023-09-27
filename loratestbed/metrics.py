@@ -61,7 +61,7 @@ def metrics_from_trace(
         # Extract and sort the Counter vector
         counter_vector = group["Counter"].values
         if node_packet_counts is not None and name in node_packet_counts:
-            counter_vector.append(node_packet_counts[name] + 1)
+            counter_vector = np.append(counter_vector, node_packet_counts[name] + 1)
 
         sorted_counter = sorted(counter_vector)
 
