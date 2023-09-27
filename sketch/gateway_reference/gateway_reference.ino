@@ -116,6 +116,9 @@ static void backhaul_data(osjob_t *job)
   Serial.print(LMIC.rssi);
   Serial.print(", ");
   Serial.print(LMIC.snr);
+  // TODO: Print CRC
+  Serial.print(", ");
+  Serial.print(1);
   Serial.print("\n");
 }
 
