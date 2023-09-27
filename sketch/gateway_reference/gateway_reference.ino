@@ -62,30 +62,31 @@
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
-  .nss = D10,
-  .rxtx = LMIC_UNUSED_PIN,
-  .rst = A0,
-  .dio = {2, 3, 4},
+    .nss = D10,
+    .rxtx = LMIC_UNUSED_PIN,
+    .rst = A0,
+    .dio = {2, 3, 4},
 };
-
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
 // DISABLE_JOIN is set in arduino-lmoc/project_config/lmic_project_config.h,
 // otherwise the linker will complain).
-void os_getArtEui (u1_t* buf) { }
-void os_getDevEui (u1_t* buf) { }
-void os_getDevKey (u1_t* buf) { }
+void os_getArtEui(u1_t *buf) {}
+void os_getDevEui(u1_t *buf) {}
+void os_getDevKey(u1_t *buf) {}
 
 // this gets callled by the library but we choose not to display any info;
 // and no action is required.
-void onEvent (ev_t ev) {
+void onEvent(ev_t ev)
+{
 }
 
 osjob_t arbiter_job, backhaul_job;
 
 // Enable rx mode and call func when a packet is received
-void rx(osjobcb_t func) {
+void rx(osjobcb_t func)
+{
   LMIC.osjob.func = func;
   LMIC.rxtime = os_getTime(); // RX _now_
   // Enable "continuous" RX (e.g. without a timeout, still stops after
@@ -93,17 +94,20 @@ void rx(osjobcb_t func) {
 
   os_radio(RADIO_RXON);
 
-//  Serial.print("RxStart: ");
-//  Serial.print(os_getTime());
-//  Serial.print("\n");
+  //  Serial.print("RxStart: ");
+  //  Serial.print(os_getTime());
+  //  Serial.print("\n");
 }
 
-static void backhaul_data (osjob_t* job) {
+static void backhaul_data(osjob_t *job)
+{
   // Asynchronous backhaul job
-  for (u2_t ind = 0; ind <  LMIC.dataLen; ind++) {
+  for (u2_t ind = 0; ind < LMIC.dataLen; ind++)
+  {
     if (LMIC.frame[ind] > 15)
       Serial.print(LMIC.frame[ind], HEX);
-    else {
+    else
+    {
       Serial.print("0");
       Serial.print(LMIC.frame[ind], HEX);
     }
@@ -112,25 +116,28 @@ static void backhaul_data (osjob_t* job) {
   Serial.print(LMIC.rssi);
   Serial.print(", ");
   Serial.print(LMIC.snr);
+  Serial.print(", ");
+  Serial.print(LMIC.sysname_crc_err);
   Serial.print("\n");
 }
 
-static void rxdone_func (osjob_t* job) {
+static void rxdone_func(osjob_t *job)
+{
   // Arbiter
   os_setCallback(job, rx_func);
   // Backhaul
   os_setTimedCallback(&backhaul_job, os_getTime() + 100, backhaul_data);
-  
 }
 
-static void rx_func (osjob_t* job) {
+static void rx_func(osjob_t *job)
+{
   // GET BUF_OUT
   rx(rxdone_func);
 }
 
-
 // application entry point
-void setup() {
+void setup()
+{
   Serial.begin(2000000);
   pinMode(LED_BUILTIN, OUTPUT);
   // initialize runtime env
@@ -141,8 +148,8 @@ void setup() {
   LMIC.freq = FREQ_EXPT; // WCSNG
   // MAKERPS(SF8 , BW500, CR_4_8, 0, 0)
   // MAKERPS(SF7 , BW500, CR_4_5, 0, 0)
-  LMIC.rps = MAKERPS(SF8 , BW125, CR_4_8, 0, 0); // WCSNG
-  LMIC.sysname_tx_rps =  MAKERPS(SF8 , BW125, CR_4_8, 0, 0);
+  LMIC.rps = MAKERPS(SF8, BW125, CR_4_8, 0, 0); // WCSNG
+  LMIC.sysname_tx_rps = MAKERPS(SF8, BW125, CR_4_8, 0, 0);
   LMIC.txpow = 21;
   LMIC.radio_txpow = 21; // WCSNG
 
@@ -152,10 +159,10 @@ void setup() {
   os_setCallback(&arbiter_job, rx_func);
 
   digitalWrite(LED_BUILTIN, HIGH); // on
-
 }
 
-void loop() {
+void loop()
+{
   // execute scheduled jobs and events
   os_runloop_once();
 }
