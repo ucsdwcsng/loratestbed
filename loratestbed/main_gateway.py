@@ -1,5 +1,4 @@
 import serial
-import signal
 import sys
 import argparse
 
@@ -30,6 +29,7 @@ class SerialReader:
                     self.output.write(decoded_line)
                     self.output.flush()
         except KeyboardInterrupt:
+            self.close()
             print("Exiting...")
 
     def close(self):
@@ -39,12 +39,6 @@ class SerialReader:
             self.file.close()
 
 
-def sigint_handler(signal, frame):
-    global reader
-    reader.close()
-    sys.exit(0)
-
-
 def run_gateway(baudrate=9600, port=None, filename=None):
     reader = SerialReader(port, baudrate)
 
@@ -52,8 +46,6 @@ def run_gateway(baudrate=9600, port=None, filename=None):
         reader.set_output_to_file(filename)
     else:
         reader.set_output_to_console()
-
-    signal.signal(signal.SIGINT, sigint_handler)
 
     reader.read_serial()
     reader.close()
