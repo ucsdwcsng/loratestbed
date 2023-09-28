@@ -287,32 +287,30 @@ static void tx_func_multi(osjob_t *job)
 static u4_t get_wait_time_ms()
 {
   u4_t interval_mean = (u4_t)reg_array[0] * (u4_t)reg_array[8];
-  float cur_rand = 0 , cur_interval = 0, cur_var = 0;
-  
-  switch (reg_array[9]) {
-    case 0:
-      // Periodic
-      return interval_mean;
-      break;
-    case 1:
-      // Poisson
-      // Typecast and add 0.1 to prevent Inf.
-      cur_rand = -log(((float)os_getRndU1() + 0.1) / 255.1);
-      cur_interval = (float)interval_mean * cur_rand;
-      Serial.print("Poisson inter arrival: ");
-      Serial.print((u4_t) cur_interval);
-      return (u4_t)floor(cur_interval);
-      break;
-    case 2:
-      // Periodic with Variance
-      cur_var = 10 * ((float)os_getRndU1() - 127.5) / 255 * ((float)reg_array[45]);
-      cur_var = floor((float)interval_mean + cur_var);
-      if (cur_var < 0)
-        cur_var = 0;
-      return (u4_t)cur_var;
-      break;
-    default:
-      return interval_mean;
+  float cur_rand = 0, cur_interval = 0, cur_var = 0;
+  switch (reg_array[9])
+  {
+  case 0:
+    // Periodic
+    return interval_mean;
+    break;
+  case 1:
+    // Poisson
+    // Typecast and add 0.1 to prevent Inf.
+    cur_rand = -log(((float)os_getRndU1() + 0.1) / 255.1);
+    cur_interval = (float)interval_mean * cur_rand;
+    return (u4_t)floor(cur_interval);
+    break;
+  case 2:
+    // Periodic with Variance
+    cur_var = 10 * ((float)os_getRndU1() - 127.5) / 255 * ((float)reg_array[45]);
+    cur_var = floor((float)interval_mean + cur_var);
+    if (cur_var < 0)
+      cur_var = 0;
+    return (u4_t)cur_var;
+    break;
+  default:
+    return interval_mean;
   }
 }
 

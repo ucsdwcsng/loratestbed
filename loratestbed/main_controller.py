@@ -28,7 +28,7 @@ def main():
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     experiment_time_sec = 30
     transmit_interval_msec = 500
-    packet_arrival_model = 1  # (0: Periodic, 1: Poisson, 2: Periodic with Variance)
+    packet_arrival_model = "poisson"  #("periodic", "poisson")
 
     interface = SerialInterface(args.port)
     logging.info("Setting up DeviceManager")
@@ -39,6 +39,7 @@ def main():
     device_manager.set_transmit_interval_milliseconds(transmit_interval_msec)
     logging.info(f"Setting scheduler transmit interval mode to {packet_arrival_model}")
     device_manager.set_packet_arrival_model(packet_arrival_model)
+
     logging.info("Triggering all devices")
     device_manager.trigger_all_devices()
     logging.info("Waiting for experiment to finish...")
@@ -53,7 +54,7 @@ def main():
 
     for id, device_idx in enumerate(device_list):
         logging.info(f"Device {device_idx} sent {result_mat[id, 0]:.0f} packets")
-
+    
 # starts from here
 if __name__ == "__main__":
     main()

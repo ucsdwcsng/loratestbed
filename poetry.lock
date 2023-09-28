@@ -78,6 +78,7 @@ files = [
 name = "numpy"
 version = "1.26.0"
 description = "Fundamental package for array computing in Python"
+category = "main"
 optional = false
 python-versions = "<3.13,>=3.9"
 files = [
@@ -274,6 +275,7 @@ files = [
 name = "pyserial"
 version = "3.5"
 description = "Python Serial Port Extension"
+category = "main"
 optional = false
 python-versions = "*"
 files = [
