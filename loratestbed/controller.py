@@ -46,7 +46,7 @@ class SerialInterface:
 
     def _write_read_bytes(self, data: bytes):
         self._write_bytes(data)
-        time.sleep(0.25) # sleeping (x) s to avoid write and read back errors (rrv change), while this resolved many erros it increased py run time
+        time.sleep(0.25) # sleeping (x) s to avoid write and read back errors (rrv change), while this resolved many errors it increased py run time
         return self._read_bytes(len(data))
 
 
