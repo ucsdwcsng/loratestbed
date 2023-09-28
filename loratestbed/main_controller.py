@@ -38,7 +38,7 @@ def main():
     logging.info(f"Setting transmit interval time to {transmit_interval_msec} milliseconds")
     device_manager.set_transmit_interval_milliseconds(transmit_interval_msec)
     logging.info(f"Setting scheduler transmit interval mode to {packet_arrival_model}")
-    device_manager.set_scheduler_interval_mode(packet_arrival_model)
+    device_manager.set_packet_arrival_model(packet_arrival_model)
     logging.info("Triggering all devices")
     device_manager.trigger_all_devices()
     logging.info("Waiting for experiment to finish...")

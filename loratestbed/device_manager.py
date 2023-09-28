@@ -218,13 +218,13 @@ class DeviceManager:
             )
 
     # Setting packet arrival model at node: 0-periodic, 1-poisson, 2-periodic with variance
-    def set_packet_arrival_model(self, scehduler_interval_mode: int):
-        if scehduler_interval_mode not in (0,1,2):
+    def set_packet_arrival_model(self, arrival_model: int):
+        if arrival_model not in (0,1,2):
             raise ValueError("Scheduler interval mode must be in (0, 1, 2)")
             
         for device_idx in self._device_idxs:
             self._write_device_reg(
-                device_idx, LoRaRegister.SCHEDULER_INTERVAL_MODE, scehduler_interval_mode
+                device_idx, LoRaRegister.SCHEDULER_INTERVAL_MODE, arrival_model
             )
 
     def result_registers_from_device(self):
