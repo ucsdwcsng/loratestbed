@@ -24,11 +24,11 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
 
-    device_list = [33]
+    device_list = [26]
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     experiment_time_sec = 30
     transmit_interval_msec = 500
-    scheduler_interval_mode = 1 # (0: Periodic, 1: Poisson, 2: Periodic with Variance)
+    scheduler_interval_mode = 1  # (0: Periodic, 1: Poisson, 2: Periodic with Variance)
 
     interface = SerialInterface(args.port)
     logging.info("Setting up DeviceManager")
