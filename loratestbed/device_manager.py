@@ -217,8 +217,8 @@ class DeviceManager:
                 tx_interval_multiplier,
             )
 
-    # Setting scheduler interval mode
-    def set_scheduler_interval_mode(self, scehduler_interval_mode: int):
+    # Setting packet arrival model at node: 0-periodic, 1-poisson, 2-periodic with variance
+    def set_packet_arrival_model(self, scehduler_interval_mode: int):
         if scehduler_interval_mode not in (0,1,2):
             raise ValueError("Scheduler interval mode must be in (0, 1, 2)")
             

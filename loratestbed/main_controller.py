@@ -28,7 +28,7 @@ def main():
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     experiment_time_sec = 30
     transmit_interval_msec = 500
-    scheduler_interval_mode = 1  # (0: Periodic, 1: Poisson, 2: Periodic with Variance)
+    packet_arrival_model = 1  # (0: Periodic, 1: Poisson, 2: Periodic with Variance)
 
     interface = SerialInterface(args.port)
     logging.info("Setting up DeviceManager")
@@ -37,8 +37,8 @@ def main():
     device_manager.set_experiment_time_seconds(experiment_time_sec)
     logging.info(f"Setting transmit interval time to {transmit_interval_msec} milliseconds")
     device_manager.set_transmit_interval_milliseconds(transmit_interval_msec)
-    logging.info(f"Setting scheduler transmit interval mode to {scheduler_interval_mode}")
-    device_manager.set_scheduler_interval_mode(scheduler_interval_mode)
+    logging.info(f"Setting scheduler transmit interval mode to {packet_arrival_model}")
+    device_manager.set_scheduler_interval_mode(packet_arrival_model)
     logging.info("Triggering all devices")
     device_manager.trigger_all_devices()
     logging.info("Waiting for experiment to finish...")
