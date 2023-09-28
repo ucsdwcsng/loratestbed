@@ -1,3 +1,4 @@
+import time
 import serial
 from typing import List, Tuple
 import loratestbed.utils as utils
@@ -45,6 +46,7 @@ class SerialInterface:
 
     def _write_read_bytes(self, data: bytes):
         self._write_bytes(data)
+        time.sleep(0.25) # sleeping (x) s to avoid write and read back errors (0.25 is emperically chosen). 
         return self._read_bytes(len(data))
 
 

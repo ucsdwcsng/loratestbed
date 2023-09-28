@@ -187,6 +187,7 @@ class DeviceManager:
         self._message_to_device(255, [10, 0, 0])
         return self._message_to_device(255, [10, 0, 0])
 
+    # Setting total experiment time in seconds
     def set_experiment_time_seconds(self, time_sec: int):
         expt_time_multiplier: int = time_sec // 256 + 1
         expt_time_seconds: int = int(time_sec / expt_time_multiplier)
@@ -199,6 +200,65 @@ class DeviceManager:
                 device_idx,
                 LoRaRegister.EXPERIMENT_TIME_MULTIPLIER,
                 expt_time_multiplier,
+            )
+
+    # Setting transmit time interval in milliseconds
+    def set_transmit_interval_milliseconds(self, time_interval_msec: int):
+        tx_interval_multiplier: int = time_interval_msec // 256 + 1
+        tx_interval_milliseconds: int = int(time_interval_msec / tx_interval_multiplier)
+
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.TX_INTERVAL_GLOBAL, tx_interval_milliseconds
+            )
+            self._write_device_reg(
+                device_idx,
+                LoRaRegister.TX_INTERVAL_MULTIPLIER,
+                tx_interval_multiplier,
+            )
+
+    # Setting packet arrival model at node: periodic or poisson (if periodic add optional variance)
+    def set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
+        if not isinstance (arrival_model, str):
+            raise ValueError("Input must be a string")
+        
+        isPoisson = arrival_model.lower() == "poisson"
+        isPeriodic = arrival_model.lower() == "periodic"
+        
+        if not isPoisson and not isPeriodic:
+            raise ValueError("Input string must be either 'poisson' or 'periodic'")
+
+        if isPoisson:
+            scheduler_interval_mode = 1
+        elif isPeriodic and variance_ms is not None:
+            scheduler_interval_mode = 2
+            self._set_packet_arrival_periodic_variance(
+                variance_ms,
+            )
+        elif isPeriodic and variance_ms is None:
+            scheduler_interval_mode = 0
+
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.SCHEDULER_INTERVAL_MODE, scheduler_interval_mode
+            )
+
+    # Setting packet arrival mode - periodic variance in ms
+    def _set_packet_arrival_periodic_variance(self, variance_ms: int):
+        if not isinstance(variance_ms, int):
+            raise ValueError("Input must be an integer")
+        
+        if (variance_ms < 0) or (variance_ms > 2550):
+            raise ValueError("Input integer must be between 0 and 2550")
+        
+        # we can only set variance in multiples of x10 ms
+        variance_x10_ms = variance_ms // 10 # give only integer value
+        if variance_ms % 10 != 0:
+            self._logger.warning(f"variance_ms {variance_ms} ms is not multiple of 10, rounded off to {variance_x10_ms*10} ms")
+        
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.PERIODIC_TX_VARIANCE_X10_MS , variance_x10_ms
             )
 
     def result_registers_from_device(self):
