@@ -90,7 +90,7 @@ def run_controller(port, config):
     device_manager.trigger_all_devices()
 
     logging.info("Waiting for experiment to finish...")
-    time.sleep(config["experiment_time_sec"] + 3)
+    time.sleep(config["experiment_time_sec"] + 10)
 
     # post-experiment: pinging devices and get results
     logging.info("Pinging devices")

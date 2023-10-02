@@ -1,9 +1,8 @@
-device_list:
-  - 26
+device_list: [28, 29]
 experiment_time_sec: 30
-transmit_interval_msec: 500
+transmit_interval_msec: 100
 packet_size_bytes: 16
-mac_protocol: "CSMA"
+mac_protocol: "aloha"
 packet_arrival_model: "poisson"
 transmit_SF: "SF8"
 receive_SF: "SF8"

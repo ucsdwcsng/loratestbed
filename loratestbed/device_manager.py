@@ -4,6 +4,7 @@ import loratestbed.utils as utils
 import logging
 import numpy as np
 from enum import Enum
+import time
 
 from loratestbed.controller import SerialInterface
 
@@ -105,6 +106,7 @@ class DeviceManager:
 
     def _message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
+        time.sleep(0.1)
         if device_idx not in self._device_idxs and device_idx != 255:
             self._logger.warning(f"Device index {device_idx} not in list of devices")
             return None
@@ -127,7 +129,7 @@ class DeviceManager:
         read_bytes_int: List[int] = [utils.bytes_to_uint8([b]) for b in read_bytes]
         if read_bytes_int[1] == 255 and device_idx != 255:
             self._logger.critical(f"Readback error, got illegal: {read_bytes_int}")
-            return None
+            return message
 
         return read_bytes_int
 
@@ -248,7 +250,7 @@ class DeviceManager:
                 self._write_device_reg(
                     device_idx,
                     LoRaRegister.LBT_MAX_RSSI_S1_T,
-                    np.int8(-90).view(np.uint8),
+                    int(np.int8(-90).view(np.uint8)),
                 )
                 self._write_device_reg(device_idx, LoRaRegister.KILL_CAD_WAIT_TIME, 1)
             elif isALOHA:
