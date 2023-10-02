@@ -13,6 +13,7 @@ def make_parser():
 
     return ap
 
+
 # main function
 def main():
     logging.basicConfig(
@@ -28,13 +29,15 @@ def main():
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     experiment_time_sec = 30
     transmit_interval_msec = 500
-    packet_arrival_model = "poisson"  #("periodic", "poisson")
-    transmit_SF = "SF8" #("SF7", "SF8" ... , "SF12, "FSK", SF_RFU")
-    receive_SF = "SF8" #("SF7", "SF8" ... , "SF12, "FSK", SF_RFU")
-    transmit_BW = "BW125" #("BW125", "BW250", "BW500", BW_RFU")
-    receive_BW = "BW125" #("BW125", "BW250", "BW500", BW_RFU")
-    transmit_CR = "CR_4_8" #("CR_4_5", "CR_4_6", "CR_4_7", "CR_4_8")
-    receive_CR = "CR_4_8" #("CR_4_5", "CR_4_6", "CR_4_7", "CR_4_8")
+    packet_size_bytes = 16
+    mac_protocol = "CSMA"  # "CSMA", "ALOHA",
+    packet_arrival_model = "poisson"  # ("periodic", "poisson")
+    transmit_SF = "SF8"  # ("SF7", "SF8" ... , "SF12, "FSK", SF_RFU")
+    receive_SF = "SF8"  # ("SF7", "SF8" ... , "SF12, "FSK", SF_RFU")
+    transmit_BW = "BW125"  # ("BW125", "BW250", "BW500", BW_RFU")
+    receive_BW = "BW125"  # ("BW125", "BW250", "BW500", BW_RFU")
+    transmit_CR = "CR_4_8"  # ("CR_4_5", "CR_4_6", "CR_4_7", "CR_4_8")
+    receive_CR = "CR_4_8"  # ("CR_4_5", "CR_4_6", "CR_4_7", "CR_4_8")
 
     interface = SerialInterface(args.port)
     logging.info("Setting up DeviceManager")
@@ -43,7 +46,9 @@ def main():
     # pre-experiment: updating parameters
     logging.info(f"Setting experiment time to {experiment_time_sec} seconds")
     device_manager.set_experiment_time_seconds(experiment_time_sec)
-    logging.info(f"Setting transmit interval time to {transmit_interval_msec} milliseconds")
+    logging.info(
+        f"Setting transmit interval time to {transmit_interval_msec} milliseconds"
+    )
     device_manager.set_transmit_interval_milliseconds(transmit_interval_msec)
     logging.info(f"Setting scheduler transmit interval mode to {packet_arrival_model}")
     device_manager.set_packet_arrival_model(packet_arrival_model)
@@ -53,6 +58,12 @@ def main():
     device_manager.set_transmit_and_receive_BW(transmit_BW, receive_BW)
     logging.info(f"Setting transmit CR to {transmit_CR} and receive CR to {receive_CR}")
     device_manager.set_transmit_and_receive_CR(transmit_CR, receive_CR)
+
+    logging.info(f"Setting packet size to {packet_size_bytes} bytes")
+    device_manager.set_packet_size_bytes(packet_size_bytes)
+
+    logging.info(f"Setting MAC protocol to {mac_protocol}")
+    device_manager.set_mac_protocol(mac_protocol)
 
     # running experiment
     logging.info("Triggering all devices")
@@ -68,7 +79,8 @@ def main():
     result_mat = device_manager.result_registers_from_device()
     for id, device_idx in enumerate(device_list):
         logging.info(f"Device {device_idx} sent {result_mat[id, 0]:.0f} packets")
-    
+
+
 # starts from here
 if __name__ == "__main__":
     main()

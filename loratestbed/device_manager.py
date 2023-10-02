@@ -217,17 +217,58 @@ class DeviceManager:
                 tx_interval_multiplier,
             )
 
+    def set_mac_protocol(
+        self, protocol: str, min_backoff_ms: int = 12, max_backoff_ms: int = 64 * 12
+    ):
+        # Below is for LMAC
+        # [CAD_REG, DIFS, BACKOFF TIMEms, MAX BACKOFFMULT, CADTYPECNFG, LBT_TICKS, LBT_MAX_RSSI]
+        # expt_params.cad_cnfg_cell = {repmat([1 2 12 64 0 8 -90],com_node_num,1),...
+        if not isinstance(protocol, str):
+            raise ValueError("Input must be a string")
+        isCSMA = protocol.lower() == "csma"
+        isALOHA = protocol.lower() == "aloha"
+
+        backoff_multiplier = max_backoff_ms // min_backoff_ms
+
+        for device_idx in self._device_idxs:
+            if isCSMA:
+                # set CAD reg to 1:
+                self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 1)
+                self._write_device_reg(device_idx, LoRaRegister.CAD_CONFIG, 0)
+                self._write_device_reg(device_idx, LoRaRegister.DIFS_AS_NUM_OF_CADS, 2)
+                self._write_device_reg(
+                    device_idx, LoRaRegister.BACKOFF_CFG1_UNIT_LENGTH_MS, min_backoff_ms
+                )
+                self._write_device_reg(
+                    device_idx,
+                    LoRaRegister.BACKOFF_CFG2_MAX_MULTIPLIER,
+                    backoff_multiplier,
+                )
+                self._write_device_reg(device_idx, LoRaRegister.LBT_TICKS_X16, 8)
+                self._write_device_reg(
+                    device_idx,
+                    LoRaRegister.LBT_MAX_RSSI_S1_T,
+                    np.int8(-90).view(np.uint8),
+                )
+                self._write_device_reg(device_idx, LoRaRegister.KILL_CAD_WAIT_TIME, 1)
+            elif isALOHA:
+                self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 0)
+            else:
+                raise ValueError(f"{protocol} is not supported")
+
     # Setting packet arrival model at node: periodic or poisson (if periodic add optional variance)
     def set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
-        if not isinstance (arrival_model, str):
+        if not isinstance(arrival_model, str):
             raise ValueError("Input must be a string")
-        
+
         isPoisson = arrival_model.lower() == "poisson"
         isPeriodic = arrival_model.lower() == "periodic"
         if isPoisson:
             scheduler_interval_mode = 1
             if variance_ms is not None:
-                self._logger.warning(f"packet arrival mode is poisson, ignoring variance {variance_ms} ms")
+                self._logger.warning(
+                    f"packet arrival mode is poisson, ignoring variance {variance_ms} ms"
+                )
         elif isPeriodic:
             if variance_ms is None:
                 scheduler_interval_mode = 0
@@ -241,127 +282,149 @@ class DeviceManager:
 
         for device_idx in self._device_idxs:
             self._write_device_reg(
-                device_idx, LoRaRegister.SCHEDULER_INTERVAL_MODE, scheduler_interval_mode
+                device_idx,
+                LoRaRegister.SCHEDULER_INTERVAL_MODE,
+                scheduler_interval_mode,
             )
 
     # Setting packet arrival mode - periodic variance in ms
     def _set_packet_arrival_periodic_variance(self, variance_ms: int):
         if not isinstance(variance_ms, int):
             raise ValueError("Input must be an integer")
-        
+
         if (variance_ms < 0) or (variance_ms > 2550):
             raise ValueError("Input integer must be between 0 and 2550")
-        
+
         # we can only set variance in multiples of x10 ms
-        variance_x10_ms = variance_ms // 10 # give only integer value
+        variance_x10_ms = variance_ms // 10  # give only integer value
         if variance_ms % 10 != 0:
-            self._logger.warning(f"variance_ms {variance_ms} ms is not multiple of 10, rounded off to {variance_x10_ms*10} ms")
-        
+            self._logger.warning(
+                f"variance_ms {variance_ms} ms is not multiple of 10, rounded off to {variance_x10_ms*10} ms"
+            )
+
         for device_idx in self._device_idxs:
             self._write_device_reg(
-                device_idx, LoRaRegister.PERIODIC_TX_VARIANCE_X10_MS , variance_x10_ms
+                device_idx, LoRaRegister.PERIODIC_TX_VARIANCE_X10_MS, variance_x10_ms
             )
 
     # Set SF for transmit and receive modes
     def set_transmit_and_receive_SF(self, transmit_SF: str, receive_SF: str):
-        if not isinstance(transmit_SF, str) or not isinstance(receive_SF,str):
+        if not isinstance(transmit_SF, str) or not isinstance(receive_SF, str):
             raise ValueError("Both inputs must be a string")
-        
+
         transmit_SF_mode = self._convert_SF_string_to_mode(transmit_SF)
         receive_SF_mode = self._convert_SF_string_to_mode(receive_SF)
         config_txSF_rxSF = (transmit_SF_mode << 4) + receive_SF_mode
-        self._logger.info(f"setting SF transmit mode: {transmit_SF_mode}, SF receive mode: {receive_SF_mode}, combined SF mode(8 bits): {config_txSF_rxSF}")
+        self._logger.info(
+            f"setting SF transmit mode: {transmit_SF_mode}, SF receive mode: {receive_SF_mode}, combined SF mode(8 bits): {config_txSF_rxSF}"
+        )
 
-        #updating CONFIG_TXSF_RXSF register 
+        # updating CONFIG_TXSF_RXSF register
         for device_idx in self._device_idxs:
             self._write_device_reg(
-                device_idx, LoRaRegister.CONFIG_TXSF_RXSF , config_txSF_rxSF
+                device_idx, LoRaRegister.CONFIG_TXSF_RXSF, config_txSF_rxSF
             )
-        
+
     # internal function to convert SF string to SF mode
     def _convert_SF_string_to_mode(self, SF_string):
         SF_dictionary = {
-            "FSK": 0, 
-            "SF7": 1, 
-            "SF8": 2, 
-            "SF9": 3, 
-            "SF10": 4, 
-            "SF11": 5, 
-            "SF12": 6, 
+            "FSK": 0,
+            "SF7": 1,
+            "SF8": 2,
+            "SF9": 3,
+            "SF10": 4,
+            "SF11": 5,
+            "SF12": 6,
             "SF_RFU": 7,
         }
 
-        SF_UP_string = SF_string.upper() # to make input SF string case insensitive
+        SF_UP_string = SF_string.upper()  # to make input SF string case insensitive
         if SF_UP_string in SF_dictionary:
             return SF_dictionary[SF_UP_string]
         else:
-            possible_SF_strings = ','.join(SF_dictionary.keys())
-            raise ValueError(f"Given SF string '{SF_string}' not in valid SF strings: [{possible_SF_strings}]")
-        
+            possible_SF_strings = ",".join(SF_dictionary.keys())
+            raise ValueError(
+                f"Given SF string '{SF_string}' not in valid SF strings: [{possible_SF_strings}]"
+            )
+
     # Set BW for transmit and receive modes
     def set_transmit_and_receive_BW(self, transmit_BW: str, receive_BW: str):
-        if not isinstance(transmit_BW, str) or not isinstance(receive_BW,str):
+        if not isinstance(transmit_BW, str) or not isinstance(receive_BW, str):
             raise ValueError("Both inputs must be a string")
-        
+
         transmit_BW_mode = self._convert_BW_string_to_mode(transmit_BW)
         receive_BW_mode = self._convert_BW_string_to_mode(receive_BW)
         config_txBW_rxBW = (transmit_BW_mode << 4) + receive_BW_mode
-        self._logger.info(f"setting BW transmit mode: {transmit_BW_mode}, BW receive mode: {receive_BW_mode}, combined BW mode(8 bits): {config_txBW_rxBW}")
+        self._logger.info(
+            f"setting BW transmit mode: {transmit_BW_mode}, BW receive mode: {receive_BW_mode}, combined BW mode(8 bits): {config_txBW_rxBW}"
+        )
 
-        #updating CONFIG_TXBW_RXBW register 
+        # updating CONFIG_TXBW_RXBW register
         for device_idx in self._device_idxs:
             self._write_device_reg(
-                device_idx, LoRaRegister.CONFIG_TXBW_RXBW , config_txBW_rxBW
+                device_idx, LoRaRegister.CONFIG_TXBW_RXBW, config_txBW_rxBW
             )
-        
+
     # internal function to convert BW string to BW mode
     def _convert_BW_string_to_mode(self, BW_string):
         BW_dictionary = {
-            "BW125": 0, 
-            "BW250": 1, 
-            "BW500": 2, 
+            "BW125": 0,
+            "BW250": 1,
+            "BW500": 2,
             "BW_RFU": 3,
         }
 
-        BW_UP_string = BW_string.upper() # to make input BW string case insensitive
+        BW_UP_string = BW_string.upper()  # to make input BW string case insensitive
         if BW_UP_string in BW_dictionary:
             return BW_dictionary[BW_UP_string]
         else:
-            possible_BW_strings = ','.join(BW_dictionary.keys())
-            raise ValueError(f"Given BW string '{BW_string}' not in valid BW strings: [{possible_BW_strings}]")
+            possible_BW_strings = ",".join(BW_dictionary.keys())
+            raise ValueError(
+                f"Given BW string '{BW_string}' not in valid BW strings: [{possible_BW_strings}]"
+            )
+
+    def set_packet_size_bytes(self, packet_size_bytes: int):
+        for device_idx in self._device_idxs:
+            self._write_device_reg(
+                device_idx, LoRaRegister.PACKET_SIZE_BYTES, packet_size_bytes
+            )
 
     # Set CR for transmit and receive modes
     def set_transmit_and_receive_CR(self, transmit_CR: str, receive_CR: str):
-        if not isinstance(transmit_CR, str) or not isinstance(receive_CR,str):
+        if not isinstance(transmit_CR, str) or not isinstance(receive_CR, str):
             raise ValueError("Both inputs must be a string")
-        
+
         transmit_CR_mode = self._convert_CR_string_to_mode(transmit_CR)
         receive_CR_mode = self._convert_CR_string_to_mode(receive_CR)
         config_txCR_rxCR = (transmit_CR_mode << 4) + receive_CR_mode
-        self._logger.info(f"setting CR transmit mode: {transmit_CR_mode}, CR receive mode: {receive_CR_mode}, combined CR mode(8 bits): {config_txCR_rxCR}")
+        self._logger.info(
+            f"setting CR transmit mode: {transmit_CR_mode}, CR receive mode: {receive_CR_mode}, combined CR mode(8 bits): {config_txCR_rxCR}"
+        )
 
-        #updating CONFIG_TXCR_RXCR register 
+        # updating CONFIG_TXCR_RXCR register
         for device_idx in self._device_idxs:
             self._write_device_reg(
-                device_idx, LoRaRegister.CONFIG_TXCR_RXCR , config_txCR_rxCR
+                device_idx, LoRaRegister.CONFIG_TXCR_RXCR, config_txCR_rxCR
             )
-        
+
     # internal function to convert CR string to CR mode
     def _convert_CR_string_to_mode(self, CR_string):
         CR_dictionary = {
-            "CR_4_5": 0, 
-            "CR_4_6": 1, 
-            "CR_4_7": 2, 
+            "CR_4_5": 0,
+            "CR_4_6": 1,
+            "CR_4_7": 2,
             "CR_4_8": 3,
         }
 
-        CR_UP_string = CR_string.upper() # to make input CR string case insensitive
+        CR_UP_string = CR_string.upper()  # to make input CR string case insensitive
         if CR_UP_string in CR_dictionary:
             return CR_dictionary[CR_UP_string]
         else:
-            possible_CR_strings = ','.join(CR_dictionary.keys())
-            raise ValueError(f"Given CR string '{CR_string}' not in valid CR strings: [{possible_CR_strings}]")
-            
+            possible_CR_strings = ",".join(CR_dictionary.keys())
+            raise ValueError(
+                f"Given CR string '{CR_string}' not in valid CR strings: [{possible_CR_strings}]"
+            )
+
     def result_registers_from_device(self):
         result_registers = [
             LoRaRegister.RESULT_COUNTER_BYTE_0,
