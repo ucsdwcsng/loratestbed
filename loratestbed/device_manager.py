@@ -170,12 +170,20 @@ class DeviceManager:
         return pingable_devices
 
     def _read_all_device_regs(self, device_idxs: List[int]):
+        ping_limit = 5 # ping for max 5 times
         if not isinstance(device_idxs, list):
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
-                ret_int_list = self._device_reg(device_idx, reg_id)
-                self._device_states[id, reg_id.value] = ret_int_list[-1]
+                ret_int_list = None
+                ping_node_again = ping_limit
+                while (ret_int_list is None and ping_node_again > 0):
+                    ret_int_list = self._device_reg(device_idx, reg_id)
+                    ping_node_again = ping_node_again - 1
+                if ping_node_again == 0:
+                    ret_int_list = [0]
+                    self._logger.warning(f"Device {device_idx}'s register {reg_id} did not respond, default 0")
+                self._device_states[id, reg_id.value] = ret_int_list[-1]  
 
     def disable_all_devices(self):
         # Disable all devices by broadcasting 0 experiment time
@@ -188,7 +196,7 @@ class DeviceManager:
         return self._message_to_device(255, [10, 0, 0])
 
     # Setting total experiment time in seconds
-    def set_experiment_time_seconds(self, time_sec: int):
+    def _set_experiment_time_seconds(self, time_sec: int):
         expt_time_multiplier: int = time_sec // 256 + 1
         expt_time_seconds: int = int(time_sec / expt_time_multiplier)
 
@@ -203,7 +211,7 @@ class DeviceManager:
             )
 
     # Setting transmit time interval in milliseconds
-    def set_transmit_interval_milliseconds(self, time_interval_msec: int):
+    def _set_transmit_interval_milliseconds(self, time_interval_msec: int):
         tx_interval_multiplier: int = time_interval_msec // 256 + 1
         tx_interval_milliseconds: int = int(time_interval_msec / tx_interval_multiplier)
 
@@ -218,7 +226,7 @@ class DeviceManager:
             )
 
     # Setting packet arrival model at node: periodic or poisson (if periodic add optional variance)
-    def set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
+    def _set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
         if not isinstance (arrival_model, str):
             raise ValueError("Input must be a string")
         
@@ -263,7 +271,7 @@ class DeviceManager:
             )
 
     # Set SF for transmit and receive modes
-    def set_transmit_and_receive_SF(self, transmit_SF: str, receive_SF: str):
+    def _set_transmit_and_receive_SF(self, transmit_SF: str, receive_SF: str):
         if not isinstance(transmit_SF, str) or not isinstance(receive_SF,str):
             raise ValueError("Both inputs must be a string")
         
@@ -299,7 +307,7 @@ class DeviceManager:
             raise ValueError(f"Given SF string '{SF_string}' not in valid SF strings: [{possible_SF_strings}]")
         
     # Set BW for transmit and receive modes
-    def set_transmit_and_receive_BW(self, transmit_BW: str, receive_BW: str):
+    def _set_transmit_and_receive_BW(self, transmit_BW: str, receive_BW: str):
         if not isinstance(transmit_BW, str) or not isinstance(receive_BW,str):
             raise ValueError("Both inputs must be a string")
         
@@ -331,7 +339,7 @@ class DeviceManager:
             raise ValueError(f"Given BW string '{BW_string}' not in valid BW strings: [{possible_BW_strings}]")
 
     # Set CR for transmit and receive modes
-    def set_transmit_and_receive_CR(self, transmit_CR: str, receive_CR: str):
+    def _set_transmit_and_receive_CR(self, transmit_CR: str, receive_CR: str):
         if not isinstance(transmit_CR, str) or not isinstance(receive_CR,str):
             raise ValueError("Both inputs must be a string")
         
@@ -361,6 +369,44 @@ class DeviceManager:
         else:
             possible_CR_strings = ','.join(CR_dictionary.keys())
             raise ValueError(f"Given CR string '{CR_string}' not in valid CR strings: [{possible_CR_strings}]")
+        
+    def update_node_params(self, **kwargs):
+        # Configurable node params
+        configurable_node_params_list = {
+            'EXPT_TIME': self._set_experiment_time_seconds,
+            'TX_INTERVAL': self._set_transmit_interval_milliseconds,
+            'ARRIVAL_MODEL': self._set_packet_arrival_model,
+            'LORA_SF': self._set_transmit_and_receive_SF,
+            'LORA_BW': self._set_transmit_and_receive_BW,
+            'LORA_CR': self._set_transmit_and_receive_CR,
+        }
+
+        for node_param, args in kwargs.items():
+            node_param_up = node_param.upper() # This makes input case in-sensitive
+            if node_param_up in configurable_node_params_list:
+                function = configurable_node_params_list[node_param_up]
+                # check if the number of args are valid for the respective function
+                if node_param_up == "EXPT_TIME":
+                    logging.info(f"Setting experiment time to {args[0]} seconds")
+                    assert (len(args) == 1), "Changing 'experiment time' only requires one input (time in seconds)"
+                elif node_param_up == "TX_INTERVAL":
+                    logging.info(f"Setting transmit interval time to {args[0]} milliseconds")
+                    assert (len(args) == 1), "Changing 'transmit interval' only requires one input (time in seconds)"
+                elif node_param_up == "ARRIVAL_MODEL":
+                    logging.info(f"Setting scheduler transmit interval mode to {args[0]}")
+                    assert (len(args) == 1 or len(args) == 2), "Changing 'arrival model' needs one manadate input (model type) and an optional input for periodic type (variance)"
+                elif node_param_up == "LORA_SF":
+                    logging.info(f"Setting transmit SF to {args[0]} and receive SF to {args[1]}")
+                    assert (len(args) == 2), "Changing 'LoRa SF' requires two string inputs ('transmit SF' and 'receive SF')"
+                elif node_param_up == "LORA_BW":
+                    logging.info(f"Setting transmit BW to {args[0]} and receive BW to {args[1]}")
+                    assert (len(args) == 2), "Changing 'LoRa BW' requires two string inputs ('transmit BW' and 'receive BW')"
+                elif node_param_up == "LORA_CR":
+                    logging.info(f"Setting transmit CR to {args[0]} and receive CR to {args[1]}")
+                    assert (len(args) == 2), "Changing 'LoRa CR requires two string inputs ('transmit CR' and 'receive CR')"
+                function(*args)
+            else:
+                raise ValueError(f"Given node param '{node_param}' not in configurable node params list: [{configurable_node_params_list}]")
             
     def result_registers_from_device(self):
         result_registers = [
@@ -375,7 +421,7 @@ class DeviceManager:
             LoRaRegister.RESULT_LBT_COUNTER_BYTE_2,
         ]
 
-        results = np.zeros((self._num_devices, len(result_registers)), dtype=np.float32)
+        results = np.zeros((self._num_devices, len(result_registers)), dtype=np.int32)
 
         for id, device_idx in enumerate(self._device_idxs):
             for reg_series, reg_id in enumerate(result_registers):
