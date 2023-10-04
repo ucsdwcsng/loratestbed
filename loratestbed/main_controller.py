@@ -44,9 +44,22 @@ def run_controller(port, config):
     logging.info("Setting up DeviceManager")
     device_manager = DeviceManager(config["device_list"], interface)
 
+    # TODO: fix this
+    # device_manager.update_node_params(
+    #     EXPT_TIME=[experiment_time_sec],
+    #     # TX_INTERVAL=[transmit_interval_msec],
+    #     # ARRIVAL_MODEL=[packet_arrival_model],
+    #     # ARRIVAL_MODEL=[packet_arrival_model, periodic_variance_x10_msec],
+    #     # LORA_SF=[transmit_SF, receive_SF],
+    #     LORA_BW=[transmit_BW, receive_BW],
+    #     # LORA_CR=[transmit_CR, receive_CR],
+    # )
+
     # pre-experiment: updating parameters
     logging.info(f"Setting experiment time to {config['experiment_time_sec']} seconds")
-    device_manager.set_experiment_time_seconds(config["experiment_time_sec"])
+    device_manager._set_experiment_time_seconds(config["experiment_time_sec"])
+
+    device_manager.update_node_params(**config)
 
     logging.info(
         f"Setting transmit interval time to {config['transmit_interval_msec']} milliseconds"
@@ -61,21 +74,21 @@ def run_controller(port, config):
     logging.info(
         f"Setting transmit SF to {config['transmit_SF']} and receive SF to {config['receive_SF']}"
     )
-    device_manager.set_transmit_and_receive_SF(
+    device_manager._set_transmit_and_receive_SF(
         config["transmit_SF"], config["receive_SF"]
     )
 
     logging.info(
         f"Setting transmit BW to {config['transmit_BW']} and receive BW to {config['receive_BW']}"
     )
-    device_manager.set_transmit_and_receive_BW(
+    device_manager._set_transmit_and_receive_BW(
         config["transmit_BW"], config["receive_BW"]
     )
 
     logging.info(
         f"Setting transmit CR to {config['transmit_CR']} and receive CR to {config['receive_CR']}"
     )
-    device_manager.set_transmit_and_receive_CR(
+    device_manager._set_transmit_and_receive_CR(
         config["transmit_CR"], config["receive_CR"]
     )
 
