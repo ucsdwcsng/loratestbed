@@ -1,8 +1,11 @@
-# loratestbed
+# LoRa Testbed
 
-An infrastructure-less, arduino-compatible LoRa testbed for PHY and MAC research.
+An infrastructure-less, arduino-compatible LoRa testbed for PHY and MAC research. The user will simply provide a config file (that contains the experiment configuration details) to the testbed. The controller will communicate with the network to then return the results after the experiment has ended. See below for a high level overview. 
 
-![](./docs/testbed_setup_diagram.png)
+<figure>
+    <img src="./docs/testbed_setup_diagram.png">
+    <figcaption style="text-align:center;">Diagram 1: High level overview of the LoRa Testbed.</figcaption>
+</figure>
 
 
 ## Run a simple experiment with 1 device (9/14/23)
