@@ -2,6 +2,9 @@
 
 An infrastructure-less, arduino-compatible LoRa testbed for PHY and MAC research.
 
+![](./docs/testbed_setup_diagram.png)
+
+
 ## Run a simple experiment with 1 device (9/14/23)
 
 ```bash
