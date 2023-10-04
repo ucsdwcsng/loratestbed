@@ -85,14 +85,14 @@ def run_controller(port, config):
     logging.info(f"Setting MAC protocol to {config['mac_protocol']}")
     device_manager.set_mac_protocol(config["mac_protocol"])
 
-    # running experiment
+    # %% running experiment
     logging.info("Triggering all devices")
     device_manager.trigger_all_devices()
 
     logging.info("Waiting for experiment to finish...")
     time.sleep(config["experiment_time_sec"] + 10)
 
-    # post-experiment: pinging devices and get results
+    # %% post-experiment: pinging devices and get results
     logging.info("Pinging devices")
     pingable_devices = device_manager._ping_devices(config["device_list"])
     assert (
