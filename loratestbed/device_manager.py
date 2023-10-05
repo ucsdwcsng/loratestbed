@@ -98,6 +98,9 @@ class DeviceManager:
         self._serial_interface = serial_interface
         self._ping_limit = 5 # ping for max 5 times
 
+        # Disable all devices, later only set experiment time to the desired nodes
+        self.disable_all_devices()
+
         # Device states initialized by reading the devices themselves
         self._device_states = np.zeros(
             (self._num_devices, REG_ARRAY_LENGTH), dtype=np.uint8

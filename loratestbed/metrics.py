@@ -127,16 +127,13 @@ def compute_node_metrics(dataframe: pd.DataFrame, total_experiment_time: int, de
     # if no argument is given, read from all nodes
     if desired_node_indices is None:
         desired_node_indices = dataframe['NodeAddress'].unique()
-    # if passing a single node index convert it into a list
-    elif not isinstance(desired_node_indices,list):
-        desired_node_indices = [desired_node_indices]
 
     # extracted metrics
-    dataframe = dataframe[dataframe['NodeAddress'].isin(desired_node_indices)] # desired node_indices must be a list
-    received_packets = dataframe.shape[0]
-    snr_values = dataframe['SNR'].tolist()
-    rssi_values = dataframe['RSSI'].tolist()
-    total_transmitted_packets = sum(dataframe['TransmittedPackets'].unique())
+    filtered_dataframe = dataframe[dataframe['NodeAddress'].isin(desired_node_indices)] # desired node_indices must be a list
+    received_packets = filtered_dataframe.shape[0]
+    snr_values = filtered_dataframe['SNR'].tolist()
+    rssi_values = filtered_dataframe['RSSI'].tolist()
+    total_transmitted_packets = sum(filtered_dataframe['TransmittedPackets'].unique())
 
     if total_transmitted_packets == 0:
         print(f"No tranmitted packets with node_indices: {desired_node_indices}")
@@ -149,13 +146,23 @@ def compute_node_metrics(dataframe: pd.DataFrame, total_experiment_time: int, de
     print(f"Assuming all nodes transmit known (same) packet length with duration {packet_duration*1000} ms and bytes {packet_bytes}")
 
     # computed metrics
-    missing_packets = total_transmitted_packets - received_packets
+    if len(desired_node_indices) == 1:
+        missing_packets = total_transmitted_packets - received_packets
+    else:
+        # total missing packets is sum of missing packets from each node
+        missing_packets = 0
+        for node_ind in desired_node_indices:
+            dataframe_per_node = dataframe[dataframe['NodeAddress'] == node_ind]
+            received_packets_per_node = dataframe_per_node.shape[0]
+            total_transmitted_packets_per_node = (dataframe_per_node['TransmittedPackets'].unique())[0] #ideally should only get one value
+            missing_packets = missing_packets + (total_transmitted_packets_per_node-received_packets_per_node)
+
     packet_reception_ratio = 1 - (missing_packets/total_transmitted_packets)
     packet_bits = packet_bytes*no_bits_in_byte
     throughput = received_packets*packet_bits/total_experiment_time
     network_capacity = packet_bits/packet_duration
     normalized_throughput = throughput/network_capacity
-    offered_load = total_transmitted_packets*packet_bits/total_experiment_time
+    offered_load = sum(dataframe['TransmittedPackets'].unique())*packet_bits/total_experiment_time #offered load considers transmitted packets from all nodes instead of only desired nodes
     normalized_offered_load = offered_load/network_capacity
 
     node_metrics_dict = {}

@@ -5,10 +5,12 @@ import time
 import csv
 import numpy as np
 from threading import Thread
+from datetime import datetime
 
 from loratestbed.controller import SerialInterface
 from loratestbed.device_manager import DeviceManager
 from loratestbed.main_gateway import run_gateway
+from loratestbed.experiment_logbook import logbook_add_entry
 
 def make_parser():
     ap = argparse.ArgumentParser()
@@ -71,11 +73,12 @@ def main():
     interface = SerialInterface(args.controller_port)
     logging.info("Setting up DeviceManager")
     device_manager = DeviceManager(device_list, interface)
+    device_manager.disable_all_devices()# Disable all devices, later only set experiment time to the desired nodes
 
     # initialzing node parameters
     node_params = { 
         "experiment_time_sec": 30,
-        "transmit_interval_msec": 500,
+        "transmit_interval_msec": 1000,
         "packet_arrival_model": "POISSON",  #("PERIODIC", "POISSON")
         "periodic_variance_x10_msec": 0,
         "transmit_SF": "SF8", "receive_SF": "SF8", #("SF7", "SF8" ... , "SF12, "FSK", SF_RFU")
@@ -96,16 +99,31 @@ def main():
 
     # runnning experiment
     folder_name = "data_files_local"
-    controller_filename = f"{folder_name}/Controller_file_t{node_params['experiment_time_sec']}_i{node_params['transmit_interval_msec']}_m{node_params['packet_arrival_model']}.csv"
-    gateway_filename = f"{folder_name}/Gateway_file_t{node_params['experiment_time_sec']}_i{node_params['transmit_interval_msec']}_m{node_params['packet_arrival_model']}.csv"
+    current_time = datetime.now()
+    controller_filename = f"{folder_name}/controller_{current_time.strftime('%Y_%m_%d_%H_%M_%S')}.csv"
+    logbook_filename = f"{folder_name}/experiment_logbook.csv"
+    gateway_filename = f"{folder_name}/gateway_{current_time.strftime('%Y_%m_%d_%H_%M_%S')}.csv"
     gateway_port = args.gateway_port
     gateway_baudrate = 2000000
-    gateway_timeout = 60
+    gateway_timeout = node_params["experiment_time_sec"]+10
 
     #run_gateway(gateway_baudrate, gateway_port, gateway_filename,gateway_timeout)
     #run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
     run_experiment (device_manager, node_params["experiment_time_sec"], controller_filename, gateway_port, gateway_filename, gateway_timeout, gateway_baudrate)
     
+    # add experiment in logbook datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+    expt_params = {
+        "date_time_str": current_time.strftime("%Y-%m-%d %H:%M:%S"),
+        "expt_name": "Experiment 1",
+        "expt_version": 1.0,
+        "experiment_time_sec": node_params['experiment_time_sec'],
+        "controller_filename": controller_filename,
+        "gateway_filename": gateway_filename,
+        "metadata_filename": None,
+        "logbook_message": "LoRa hardware experiments"
+    }
+    logbook_add_entry(logbook_filename, expt_params)
+
 # starts from here
 if __name__ == "__main__":
     main()
