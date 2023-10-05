@@ -5,6 +5,7 @@ import logging
 import numpy as np
 from enum import Enum
 import time
+import pandas as pd
 
 from loratestbed.controller import SerialInterface
 
@@ -500,7 +501,19 @@ class DeviceManager:
                     f"Given node param '{node_param}' not in configurable node params list: [{configurable_node_params_list}]"
                 )
 
-    def result_registers_from_device(self):
+    def results(self):
+        results = self._result_registers_from_device()
+        column_names = [
+            "NodeAddress",
+            "TransmittedPackets",
+            "BackoffCounter",
+            "LBTCounter",
+        ]
+        result_df: pd.Dataframe = pd.DataFrame(results, columns=column_names)
+
+        return result_df
+
+    def _result_registers_from_device(self):
         result_registers = [
             LoRaRegister.RESULT_COUNTER_BYTE_0,
             LoRaRegister.RESULT_COUNTER_BYTE_1,
@@ -513,9 +526,12 @@ class DeviceManager:
             LoRaRegister.RESULT_LBT_COUNTER_BYTE_2,
         ]
 
-        results = np.zeros((self._num_devices, len(result_registers)), dtype=np.int32)
+        results = np.zeros(
+            (self._num_devices, len(result_registers) + 1), dtype=np.int32
+        )
 
         for id, device_idx in enumerate(self._device_idxs):
+            results[id, 0] = device_idx
             for reg_series, reg_id in enumerate(result_registers):
                 ret_int_list = None
                 ping_node_again = self._ping_limit
@@ -529,7 +545,7 @@ class DeviceManager:
                     self._logger.warning(
                         f"Device {device_idx}'s register {reg_id} did not respond, default 0"
                     )
-                results[id, reg_series] = ret_int_list[-1]
+                results[id, reg_series + 1] = ret_int_list[-1]
 
         # Add the byte registers together to get the full result
         for i in range(0, 9, 3):

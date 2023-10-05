@@ -108,7 +108,7 @@ def run_controller(port, config):
     logging.info("Waiting for experiment to finish...")
     time.sleep(config["experiment_time_sec"] + 10)
 
-    # %% post-experiment: pinging devices and get results
+    # post-experiment: pinging devices and get results
     logging.info("Pinging devices")
     pingable_devices = device_manager._ping_devices(config["device_list"])
     assert (
@@ -116,13 +116,11 @@ def run_controller(port, config):
     ), "Not all devices responded to ping"
 
     logging.info("Reading all result registers")
-    result_mat = device_manager.result_registers_from_device()
+    result_df = device_manager.results()
 
-    pdb.set_trace()
-    for id, device_idx in enumerate(config["device_list"]):
-        logging.info(f"Device {device_idx} sent {result_mat[id, 0]:.0f} packets")
+    logging.info(f"{result_df}")
 
-    return result_mat, config
+    return result_df, config
 
 
 # starts from here
