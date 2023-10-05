@@ -2,3 +2,5 @@ __pycache__*
 dist*
 *_local.py
 *.lock
+*.swp
+*_local*

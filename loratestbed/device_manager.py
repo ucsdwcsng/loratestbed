@@ -1,5 +1,5 @@
 import serial
-from typing import List, Tuple
+from typing import Any, List, Tuple
 import loratestbed.utils as utils
 import logging
 import numpy as np
@@ -97,6 +97,7 @@ class DeviceManager:
         self._device_idxs: List[int] = device_idxs
         self._num_devices: int = len(device_idxs)
         self._serial_interface = serial_interface
+        self._ping_limit = 5 # ping for max 5 times
 
         # Device states initialized by reading the devices themselves
         self._device_states = np.zeros(
@@ -178,16 +179,14 @@ class DeviceManager:
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
                 ret_int_list = None
-                ping_node_again = ping_limit
-                while ret_int_list is None and ping_node_again > 0:
+                ping_node_again = self._ping_limit
+                while (ret_int_list is None and ping_node_again > 0):
                     ret_int_list = self._device_reg(device_idx, reg_id)
                     ping_node_again = ping_node_again - 1
                 if ping_node_again == 0:
                     ret_int_list = [0]
-                    self._logger.warning(
-                        f"Device {device_idx}'s register {reg_id} did not respond, default 0"
-                    )
-                self._device_states[id, reg_id.value] = ret_int_list[-1]
+                    self._logger.warning(f"Device {device_idx}'s register {reg_id} did not respond, default 0")
+                self._device_states[id, reg_id.value] = ret_int_list[-1]  
 
     def disable_all_devices(self):
         # Disable all devices by broadcasting 0 experiment time
@@ -200,6 +199,7 @@ class DeviceManager:
         return self._message_to_device(255, [10, 0, 0])
 
     # Setting total experiment time in seconds
+    def _set_experiment_time_seconds(self, time_sec: int):
     def _set_experiment_time_seconds(self, time_sec: int):
         expt_time_multiplier: int = time_sec // 256 + 1
         expt_time_seconds: int = int(time_sec / expt_time_multiplier)
@@ -215,6 +215,7 @@ class DeviceManager:
             )
 
     # Setting transmit time interval in milliseconds
+    def _set_transmit_interval_milliseconds(self, time_interval_msec: int):
     def _set_transmit_interval_milliseconds(self, time_interval_msec: int):
         tx_interval_multiplier: int = time_interval_msec // 256 + 1
         tx_interval_milliseconds: int = int(time_interval_msec / tx_interval_multiplier)
@@ -269,8 +270,8 @@ class DeviceManager:
                 raise ValueError(f"{protocol} is not supported")
 
     # Setting packet arrival model at node: periodic or poisson (if periodic add optional variance)
-    def set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
-        if not isinstance(arrival_model, str):
+    def _set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
+        if not isinstance (arrival_model, str):
             raise ValueError("Input must be a string")
 
         isPoisson = arrival_model.lower() == "poisson"
@@ -515,10 +516,20 @@ class DeviceManager:
         results = np.zeros((self._num_devices, len(result_registers)), dtype=np.int32)
 
         for id, device_idx in enumerate(self._device_idxs):
-            for reg_series, reg_id in enumerate(result_registers):
-                # TODO: make this read clear
-                ret_int_list = self._device_reg(device_idx, reg_id)
-                results[id, reg_series] = ret_int_list[-1]
+            for reg_series, reg_id in enumerate(result_registers):               
+                ret_int_list = None
+                ping_node_again = self._ping_limit
+
+                # Read until return int list is not none (or) retry for given _ping_limit
+                while (ret_int_list is None and ping_node_again > 0):
+                    ret_int_list = self._device_reg(device_idx, reg_id)
+                    ping_node_again = ping_node_again - 1
+                if ping_node_again == 0:
+                    ret_int_list = [0]
+                    self._logger.warning(f"Device {device_idx}'s register {reg_id} did not respond, default 0")
+                results[id, reg_series] = ret_int_list[-1]  
+
+                
 
         # Add the byte registers together to get the full result
         for i in range(0, 9, 3):
