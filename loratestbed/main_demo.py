@@ -19,20 +19,33 @@ logging.basicConfig(
 )
 
 
+def make_parser():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-g", "--gateway", required=True, help="Gateway Port Name")
+    ap.add_argument("-c", "--controller", required=True, help="Controller Port Name")
+    ap.add_argument(
+        "--config", required=True, help="Path to the YAML configuration file"
+    )
+    return ap
+
+
 def main():
+    parser = make_parser()
+    args = parser.parse_args()
+
     gateway_trace_filename: str = "/tmp/gateway.csv"
 
     p1 = multiprocessing.Process(
         target=run_gateway,
         args=(
             2000000,
-            "/dev/ttyACM0",
+            args.gateway,
             gateway_trace_filename,
         ),
     )
     p1.start()
 
-    result_matrix, config = run_controller("/dev/ttyACM1", "./configs/example.yaml")
+    result_matrix, config = run_controller(args.controller, args.config)
 
     p1.terminate()
 

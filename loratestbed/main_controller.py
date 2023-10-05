@@ -65,7 +65,7 @@ def run_controller(port, config):
     logging.info(
         f"Setting transmit interval time to {config['transmit_interval_msec']} milliseconds"
     )
-    device_manager.set_transmit_interval_milliseconds(config["transmit_interval_msec"])
+    device_manager._set_transmit_interval_milliseconds(config["transmit_interval_msec"])
 
     logging.info(
         f"Setting scheduler transmit interval mode to {config['packet_arrival_model']}"
