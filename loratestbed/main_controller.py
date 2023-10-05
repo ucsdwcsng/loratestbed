@@ -68,7 +68,7 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
 
-    device_list = [30,31,34]
+    device_list = [25,27,30,31,34]
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     interface = SerialInterface(args.controller_port)
     logging.info("Setting up DeviceManager")
@@ -92,9 +92,9 @@ def main():
         TX_INTERVAL = [node_params["transmit_interval_msec"]], 
         ARRIVAL_MODEL = [node_params["packet_arrival_model"]], 
         # ARRIVAL_MODEL=[node_params["packet_arrival_model"], node_params["periodic_variance_x10_msec"]],
-        LORA_SF=[node_params["transmit_SF"], node_params["receive_SF"]],
+        # LORA_SF=[node_params["transmit_SF"], node_params["receive_SF"]],
         LORA_BW=[node_params["transmit_BW"], node_params["receive_BW"]],
-        LORA_CR=[node_params["transmit_CR"], node_params["receive_CR"]],
+        # LORA_CR=[node_params["transmit_CR"], node_params["receive_CR"]],
     )
 
     # runnning experiment
@@ -107,8 +107,8 @@ def main():
     gateway_baudrate = 2000000
     gateway_timeout = node_params["experiment_time_sec"]+10
 
-    #run_gateway(gateway_baudrate, gateway_port, gateway_filename,gateway_timeout)
-    #run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
+    # run_gateway(gateway_baudrate, gateway_port, gateway_filename,gateway_timeout)
+    # run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
     run_experiment (device_manager, node_params["experiment_time_sec"], controller_filename, gateway_port, gateway_filename, gateway_timeout, gateway_baudrate)
     
     # add experiment in logbook datetime.now().strftime('%Y_%m_%d_%H_%M_%S')

@@ -44,9 +44,15 @@ class SerialInterface:
         return self._serial_port.read(data_len)
 
     def _write_read_bytes(self, data: bytes):
-        self._write_bytes(data)
-        return self._read_bytes(len(data))
+        ret_int_list = None
+        ping_node_again = 5 # if read empty try again upto x(5) times
+        
+        while (ret_int_list is None and ping_node_again > 0):
+            self._write_bytes(data)
+            ret_int_list = self._read_bytes(len(data))
+            ping_node_again = ping_node_again - 1
 
+        return ret_int_list
 
 class ControllerManager:
     def __init__(self, serial_port: str) -> None:

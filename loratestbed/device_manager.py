@@ -96,10 +96,6 @@ class DeviceManager:
         self._device_idxs: List[int] = device_idxs
         self._num_devices: int = len(device_idxs)
         self._serial_interface = serial_interface
-        self._ping_limit = 5 # ping for max 5 times
-
-        # Disable all devices, later only set experiment time to the desired nodes
-        self.disable_all_devices()
 
         # Device states initialized by reading the devices themselves
         self._device_states = np.zeros(
@@ -178,12 +174,8 @@ class DeviceManager:
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
-                ret_int_list = None
-                ping_node_again = self._ping_limit
-                while (ret_int_list is None and ping_node_again > 0):
-                    ret_int_list = self._device_reg(device_idx, reg_id)
-                    ping_node_again = ping_node_again - 1
-                if ping_node_again == 0:
+                ret_int_list = self._device_reg(device_idx, reg_id)
+                if ret_int_list is None:
                     ret_int_list = [0]
                     self._logger.warning(f"Device {device_idx}'s register {reg_id} did not respond, default 0")
                 self._device_states[id, reg_id.value] = ret_int_list[-1]  
@@ -430,19 +422,11 @@ class DeviceManager:
         results = np.zeros((self._num_devices, len(result_registers)), dtype=np.int32)
         for id, device_idx in enumerate(self._device_idxs):
             for reg_series, reg_id in enumerate(result_registers):               
-                ret_int_list = None
-                ping_node_again = self._ping_limit
-
-                # Read until return int list is not none (or) retry for given _ping_limit
-                while (ret_int_list is None and ping_node_again > 0):
-                    ret_int_list = self._device_reg(device_idx, reg_id)
-                    ping_node_again = ping_node_again - 1
-                if ping_node_again == 0:
+                ret_int_list = self._device_reg(device_idx, reg_id)
+                if ret_int_list is None:
                     ret_int_list = [0]
                     self._logger.warning(f"Device {device_idx}'s register {reg_id} did not respond, default 0")
                 results[id, reg_series] = ret_int_list[-1]  
-
-                
 
         # Add the byte registers together to get the full result
         for i in range(0, 9, 3):
