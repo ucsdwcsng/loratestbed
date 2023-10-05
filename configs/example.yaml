@@ -1,4 +1,4 @@
-device_list: [28, 29]
+device_list: [34]
 experiment_time_sec: 30
 transmit_interval_msec: 100
 packet_size_bytes: 16

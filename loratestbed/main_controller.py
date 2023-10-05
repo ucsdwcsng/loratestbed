@@ -60,7 +60,7 @@ def run_controller(port, config):
     logging.info(f"Setting experiment time to {config['experiment_time_sec']} seconds")
     device_manager._set_experiment_time_seconds(config["experiment_time_sec"])
 
-    device_manager.update_node_params(**config)
+    # device_manager.update_node_params(**config)
 
     logging.info(
         f"Setting transmit interval time to {config['transmit_interval_msec']} milliseconds"
@@ -70,7 +70,7 @@ def run_controller(port, config):
     logging.info(
         f"Setting scheduler transmit interval mode to {config['packet_arrival_model']}"
     )
-    device_manager.set_packet_arrival_model(config["packet_arrival_model"])
+    device_manager._set_packet_arrival_model(config["packet_arrival_model"])
 
     logging.info(
         f"Setting transmit SF to {config['transmit_SF']} and receive SF to {config['receive_SF']}"
