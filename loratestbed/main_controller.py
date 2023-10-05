@@ -56,6 +56,8 @@ def run_controller(port, config):
     #     # LORA_CR=[transmit_CR, receive_CR],
     # )
 
+    device_manager.disable_all_devices()
+
     # pre-experiment: updating parameters
     logging.info(f"Setting experiment time to {config['experiment_time_sec']} seconds")
     device_manager._set_experiment_time_seconds(config["experiment_time_sec"])
@@ -115,6 +117,8 @@ def run_controller(port, config):
 
     logging.info("Reading all result registers")
     result_mat = device_manager.result_registers_from_device()
+
+    pdb.set_trace()
     for id, device_idx in enumerate(config["device_list"]):
         logging.info(f"Device {device_idx} sent {result_mat[id, 0]:.0f} packets")
 

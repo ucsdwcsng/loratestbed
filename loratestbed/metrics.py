@@ -23,7 +23,7 @@ def filter_packet_trace(packet_trace: pd.DataFrame):
     packet_trace = packet_trace[packet_trace["NodeAddress"] > 23]
     packet_trace = packet_trace[packet_trace["NodeAddress"] < 45]
 
-    packet_trace = packet_trace[packet_trace["SNR"] > -30]
+    packet_trace = packet_trace[packet_trace["RSSI"] > -50]
 
     # Remove packets where all bytes of payload are zero
     packet_trace = packet_trace[

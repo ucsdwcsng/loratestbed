@@ -59,7 +59,7 @@ def main():
     metrics = metrics_from_trace(packet_trace, packet_trace)
     print()
     print(f"Node ID  | % Success")
-    for node_id in metrics:
+    for node_id in packets_per_device:
         missing_packets = metrics[node_id]["MissingPackets"] + 1
         actual_packets = packets_per_device[node_id]
         print(f"Missing {missing_packets}")
