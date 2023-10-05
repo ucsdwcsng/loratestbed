@@ -6,6 +6,7 @@ import yaml
 
 from loratestbed.controller import SerialInterface
 from loratestbed.device_manager import DeviceManager
+from loratestbed.main_gateway import run_gateway
 
 
 def make_parser():

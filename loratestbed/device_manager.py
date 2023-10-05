@@ -1,5 +1,5 @@
 import serial
-from typing import List, Tuple
+from typing import Any, List, Tuple
 import loratestbed.utils as utils
 import logging
 import numpy as np
@@ -97,6 +97,7 @@ class DeviceManager:
         self._device_idxs: List[int] = device_idxs
         self._num_devices: int = len(device_idxs)
         self._serial_interface = serial_interface
+        self._ping_limit = 5  # ping for max 5 times
 
         # Device states initialized by reading the devices themselves
         self._device_states = np.zeros(
@@ -178,7 +179,7 @@ class DeviceManager:
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
                 ret_int_list = None
-                ping_node_again = ping_limit
+                ping_node_again = self._ping_limit
                 while ret_int_list is None and ping_node_again > 0:
                     ret_int_list = self._device_reg(device_idx, reg_id)
                     ping_node_again = ping_node_again - 1
@@ -269,7 +270,7 @@ class DeviceManager:
                 raise ValueError(f"{protocol} is not supported")
 
     # Setting packet arrival model at node: periodic or poisson (if periodic add optional variance)
-    def set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
+    def _set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
         if not isinstance(arrival_model, str):
             raise ValueError("Input must be a string")
 
@@ -516,8 +517,18 @@ class DeviceManager:
 
         for id, device_idx in enumerate(self._device_idxs):
             for reg_series, reg_id in enumerate(result_registers):
-                # TODO: make this read clear
-                ret_int_list = self._device_reg(device_idx, reg_id)
+                ret_int_list = None
+                ping_node_again = self._ping_limit
+
+                # Read until return int list is not none (or) retry for given _ping_limit
+                while ret_int_list is None and ping_node_again > 0:
+                    ret_int_list = self._device_reg(device_idx, reg_id)
+                    ping_node_again = ping_node_again - 1
+                if ping_node_again == 0:
+                    ret_int_list = [0]
+                    self._logger.warning(
+                        f"Device {device_idx}'s register {reg_id} did not respond, default 0"
+                    )
                 results[id, reg_series] = ret_int_list[-1]
 
         # Add the byte registers together to get the full result
