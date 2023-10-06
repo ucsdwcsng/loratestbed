@@ -118,7 +118,7 @@ def run_controller(port, config):
     logging.info("Reading all result registers")
     result_df = device_manager.results()
 
-    logging.info(f"{result_df}")
+    logging.debug(f"{result_df}")
 
     return result_df, config
 

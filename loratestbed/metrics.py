@@ -3,6 +3,7 @@ import pandas as pd
 import struct
 import matplotlib.pyplot as plt
 from tabulate import tabulate
+import pdb
 
 
 def parse_byte_string(data):
@@ -154,16 +155,16 @@ def compute_node_metrics(
     total_transmitted_packets = sum(dataframe["TransmittedPackets"].unique())
 
     if total_transmitted_packets == 0:
-        print(f"No tranmitted packets with node_indices: {desired_node_indices}")
+        print(f"No transmitted packets with node_indices: {desired_node_indices}")
         return {}
 
     # known_values
     packet_duration = 0.126  # 126 ms
     packet_bytes = 16  # 16 bytes
     no_bits_in_byte = 8
-    print(
-        f"Assuming all nodes transmit known (same) packet length with duration {packet_duration*1000} ms and bytes {packet_bytes}"
-    )
+    # print(
+    #     f"Assuming all nodes transmit known (same) packet length with duration {packet_duration*1000} ms and bytes {packet_bytes}"
+    # )
 
     # computed metrics
     missing_packets = total_transmitted_packets - received_packets
@@ -244,3 +245,75 @@ def print_statistics(result):
     for node, data in result.items():
         print(f"Node Address: {node}\n")
         print_node_statistics(data)
+
+
+def capture_metrics(gateway_output_file: str, controller_output_file: str):
+    # reading gateway output file
+    packets_trace_from_gateway = read_packet_trace(gateway_output_file)
+
+    # reading cpontroller output file
+    column_names = ["NodeAddress", "TransmittedPackets", "BackoffCounter", "LBTCounter"]
+    controller_metrics_dict = pd.read_csv(
+        controller_output_file, header=None, names=column_names, index_col=False
+    )
+
+    # get combined node_metrics
+    node_metrics_dataframe = extract_required_metrics_from_trace(
+        packets_trace_from_gateway, controller_metrics_dict
+    )
+
+    return node_metrics_dataframe
+
+
+def compute_experiment_results(
+    node_metrics_df: pd.DataFrame, experiment_time_sec: float, **kwargs
+):
+    desired_node_indices = node_metrics_df["NodeAddress"].unique()
+
+    # node_metrics_dict = compute_node_metrics(
+    #     node_metrics_df, total_experiment_time, desired_node_indices
+    # )
+    # print("------------Computed node metrics (all nodes) -------------")
+    # for key, value in node_metrics_dict.items():
+    #     print(f"{key}: {value}")
+
+    expt_results_df = pd.DataFrame()
+    for node_ind in desired_node_indices:
+        desired_node_metrics_dict = compute_node_metrics(
+            node_metrics_df, experiment_time_sec, node_ind
+        )
+        expt_results_df = expt_results_df._append(
+            desired_node_metrics_dict, ignore_index=True
+        )
+        # print(f"------------Computed node metrics for node: {node_ind} -------------")
+        # for key, value in desired_node_metrics_dict.items():
+        #     print(f"{key}: {value}")
+
+    # print("------------ Results table -------------")
+    # print(expt_results_df)
+
+    expt_results_df["snr_mean"] = expt_results_df["snr_values"].apply(
+        lambda x: np.mean(np.asarray(x, dtype=np.float32))
+    )
+
+    return expt_results_df
+
+
+def generate_plots(experiment_results_df: pd.DataFrame):
+    snr_array_list = experiment_results_df["snr_values"].to_list()
+
+    print(
+        experiment_results_df[
+            [
+                "node_indices",
+                "total_packets",
+                "packet_reception_ratio",
+                "throughput_bps",
+            ]
+        ]
+    )
+
+    for snr_array in snr_array_list:
+        plt.plot(snr_array)
+    plt.title("SNR array values")
+    plt.show()

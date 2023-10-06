@@ -8,10 +8,11 @@ import multiprocessing
 
 from loratestbed.main_controller import run_controller
 from loratestbed.main_gateway import run_gateway
-from loratestbed.metrics import read_packet_trace, metrics_from_trace
-from loratestbed.post_experiment_analysis import (
+from loratestbed.metrics import (
+    read_packet_trace,
     extract_required_metrics_from_trace,
     compute_experiment_results,
+    generate_plots,
 )
 import logging
 
@@ -56,9 +57,30 @@ def main():
     node_metrics_dataframe = extract_required_metrics_from_trace(
         packet_trace, result_df
     )
-    expt_results_df = compute_experiment_results(node_metrics_dataframe, 30)
+    expt_results_df = compute_experiment_results(node_metrics_dataframe, **config)
 
-    pdb.set_trace()
+    total_offered_load = expt_results_df.normalized_offered_load.sum()
+    total_normalized_throughput = expt_results_df.normalized_throughput.sum()
+    network_capacity_bps = expt_results_df.network_capacity_bps.iloc[0]
+
+    # print network statistics:
+    print(f"Network Capacity: {network_capacity_bps:.2f} bps")
+    print(
+        f"Total Offered Load: {total_offered_load*100:.2f}% ({network_capacity_bps*total_offered_load:.2f} bps)"
+    )
+    print(
+        f"Total Normalized Throughput: {total_normalized_throughput*100:.2f}% ({network_capacity_bps*total_normalized_throughput:.2f} bps)"
+    )
+    print(
+        expt_results_df[
+            [
+                "node_indices",
+                "total_packets",
+                "packet_reception_ratio",
+                "throughput_bps",
+            ]
+        ]
+    )
 
 
 if __name__ == "__main__":

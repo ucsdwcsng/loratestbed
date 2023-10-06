@@ -249,7 +249,7 @@ class DeviceManager:
                 # set CAD reg to 1:
                 self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 1)
                 self._write_device_reg(device_idx, LoRaRegister.CAD_CONFIG, 0)
-                self._write_device_reg(device_idx, LoRaRegister.DIFS_AS_NUM_OF_CADS, 2)
+                self._write_device_reg(device_idx, LoRaRegister.DIFS_AS_NUM_OF_CADS, 3)
                 self._write_device_reg(
                     device_idx, LoRaRegister.BACKOFF_CFG1_UNIT_LENGTH_MS, min_backoff_ms
                 )
@@ -329,7 +329,7 @@ class DeviceManager:
         transmit_SF_mode = self._convert_SF_string_to_mode(transmit_SF)
         receive_SF_mode = self._convert_SF_string_to_mode(receive_SF)
         config_txSF_rxSF = (transmit_SF_mode << 4) + receive_SF_mode
-        self._logger.info(
+        self._logger.debug(
             f"setting SF transmit mode: {transmit_SF_mode}, SF receive mode: {receive_SF_mode}, combined SF mode(8 bits): {config_txSF_rxSF}"
         )
 
@@ -369,7 +369,7 @@ class DeviceManager:
         transmit_BW_mode = self._convert_BW_string_to_mode(transmit_BW)
         receive_BW_mode = self._convert_BW_string_to_mode(receive_BW)
         config_txBW_rxBW = (transmit_BW_mode << 4) + receive_BW_mode
-        self._logger.info(
+        self._logger.debug(
             f"setting BW transmit mode: {transmit_BW_mode}, BW receive mode: {receive_BW_mode}, combined BW mode(8 bits): {config_txBW_rxBW}"
         )
 
@@ -411,7 +411,7 @@ class DeviceManager:
         transmit_CR_mode = self._convert_CR_string_to_mode(transmit_CR)
         receive_CR_mode = self._convert_CR_string_to_mode(receive_CR)
         config_txCR_rxCR = (transmit_CR_mode << 4) + receive_CR_mode
-        self._logger.info(
+        self._logger.debug(
             f"setting CR transmit mode: {transmit_CR_mode}, CR receive mode: {receive_CR_mode}, combined CR mode(8 bits): {config_txCR_rxCR}"
         )
 
@@ -456,40 +456,40 @@ class DeviceManager:
                 function = configurable_node_params_list[node_param_up]
                 # check if the number of args are valid for the respective function
                 if node_param_up == "EXPT_TIME":
-                    logging.info(f"Setting experiment time to {args[0]} seconds")
+                    self._logger.info(f"Setting experiment time to {args[0]} seconds")
                     assert (
                         len(args) == 1
                     ), "Changing 'experiment time' only requires one input (time in seconds)"
                 elif node_param_up == "TX_INTERVAL":
-                    logging.info(
+                    self._logger.info(
                         f"Setting transmit interval time to {args[0]} milliseconds"
                     )
                     assert (
                         len(args) == 1
                     ), "Changing 'transmit interval' only requires one input (time in seconds)"
                 elif node_param_up == "ARRIVAL_MODEL":
-                    logging.info(
+                    self._logger.info(
                         f"Setting scheduler transmit interval mode to {args[0]}"
                     )
                     assert (
                         len(args) == 1 or len(args) == 2
                     ), "Changing 'arrival model' needs one manadate input (model type) and an optional input for periodic type (variance)"
                 elif node_param_up == "LORA_SF":
-                    logging.info(
+                    self._logger.info(
                         f"Setting transmit SF to {args[0]} and receive SF to {args[1]}"
                     )
                     assert (
                         len(args) == 2
                     ), "Changing 'LoRa SF' requires two string inputs ('transmit SF' and 'receive SF')"
                 elif node_param_up == "LORA_BW":
-                    logging.info(
+                    self._logger.info(
                         f"Setting transmit BW to {args[0]} and receive BW to {args[1]}"
                     )
                     assert (
                         len(args) == 2
                     ), "Changing 'LoRa BW' requires two string inputs ('transmit BW' and 'receive BW')"
                 elif node_param_up == "LORA_CR":
-                    logging.info(
+                    self._logger.info(
                         f"Setting transmit CR to {args[0]} and receive CR to {args[1]}"
                     )
                     assert (
@@ -510,7 +510,7 @@ class DeviceManager:
             "LBTCounter",
         ]
         result_df: pd.Dataframe = pd.DataFrame(results, columns=column_names)
-
+        result_df.reset_index(drop=True, inplace=True)
         return result_df
 
     def _result_registers_from_device(self):
@@ -548,10 +548,11 @@ class DeviceManager:
                 results[id, reg_series + 1] = ret_int_list[-1]
 
         # Add the byte registers together to get the full result
-        for i in range(0, 9, 3):
+        for i in range(1, 10, 3):
             results[:, i] = (
                 results[:, i] + 256 * results[:, i + 1] + 256 * 256 * results[:, i + 2]
             )
 
+        results[:, 1:4:1] = results[:, 1::3]
 
-        return results[:, ::3]
+        return results[:, :4]
