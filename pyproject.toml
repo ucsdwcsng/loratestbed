@@ -1,15 +1,22 @@
 [tool.poetry]
 name = "loratestbed"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
-authors = ["Abijit Jayachandran <ajayachandran@ucsd.edu>"]
+authors = ["Raghav Subbaraman <rsubbaraman@eng.ucsd.edu>","Abijit Jayachandran <ajayachandran@ucsd.edu>","Rohith Reddy Vennam <rvennam@ucsd.edu>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.10,<3.13"
 pyserial = "^3.5"
-pytest = "^7.3.1"
+numpy = "^1.25.2"
+pandas = "^2.1.1"
+tabulate = "^0.9.0"
+pyyaml = "^6.0.1"
+matplotlib = "^3.8.0"
 
+[tool.poetry.dev-dependencies]
+pdbpp = "^0.10.3"
+pytest = "^7.3.1"
 
 [build-system]
 requires = ["poetry-core"]
