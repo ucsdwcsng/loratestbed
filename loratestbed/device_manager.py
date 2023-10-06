@@ -6,7 +6,7 @@ import numpy as np
 from enum import Enum
 import time
 import pandas as pd
-
+import pdb
 from loratestbed.controller import SerialInterface
 
 
@@ -531,7 +531,7 @@ class DeviceManager:
         )
 
         for id, device_idx in enumerate(self._device_idxs):
-            results[id, 0] = device_idx
+            results[id, 0] = int(device_idx)
             for reg_series, reg_id in enumerate(result_registers):
                 ret_int_list = None
                 ping_node_again = self._ping_limit
@@ -552,5 +552,6 @@ class DeviceManager:
             results[:, i] = (
                 results[:, i] + 256 * results[:, i + 1] + 256 * 256 * results[:, i + 2]
             )
+
 
         return results[:, ::3]
