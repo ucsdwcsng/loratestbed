@@ -1,6 +1,7 @@
 import serial
 import sys
 import argparse
+import time
 
 
 class SerialReader:
@@ -20,17 +21,25 @@ class SerialReader:
         self.file = open(filename, "w", encoding="utf-8")
         self.output = self.file
 
-    def read_serial(self):
-        try:
-            while True:
+    def read_serial(self, timeout=None):
+        start_time = time.time()
+        print(f"Reading form gateway serial monitor")
+        while True:
+            try:
                 line = self.ser.readline()
                 if line:
                     decoded_line = line.decode("utf-8", errors="replace")
                     self.output.write(decoded_line)
                     self.output.flush()
-        except KeyboardInterrupt:
-            self.close()
-            print("Exiting...")
+            except KeyboardInterrupt:
+                self.close()
+                print("Exiting... (keyboard interrupt)")   
+                break         
+            if timeout is not None:
+                if time.time() - start_time > timeout:
+                    self.close()
+                    print("Exiting... (timeout)")
+                    break
 
     def close(self):
         if self.ser and self.ser.is_open:
@@ -39,15 +48,17 @@ class SerialReader:
             self.file.close()
 
 
-def run_gateway(baudrate=9600, port=None, filename=None):
+def run_gateway(baudrate=9600, port=None, filename=None, timeout=None):
     reader = SerialReader(port, baudrate)
 
     if filename:
         reader.set_output_to_file(filename)
+        print(f"Output is written in file: {filename}")
     else:
         reader.set_output_to_console()
+        print(f"Output is written to console")
 
-    reader.read_serial()
+    reader.read_serial(timeout)
     reader.close()
 
 
@@ -74,6 +85,12 @@ if __name__ == "__main__":
         type=str,
         help="Filename to output data. If not provided, data is written to stdout.",
     )
+    parser.add_argument(
+        "-t",
+        "--timeout",
+        type=float,
+        help="Timeout(in sec) to stop reading from serial monitor, e.g: 60 sec",
+    )
 
     args = parser.parse_args()
-    run_gateway(args.baudrate, args.port, args.filename)
+    run_gateway(args.baudrate, args.port, args.filename, args.timeout)
