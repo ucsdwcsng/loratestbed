@@ -9,7 +9,10 @@ import multiprocessing
 from loratestbed.main_controller import run_controller
 from loratestbed.main_gateway import run_gateway
 from loratestbed.metrics import read_packet_trace, metrics_from_trace
-
+from loratestbed.post_experiment_analysis import (
+    extract_required_metrics_from_trace,
+    compute_experiment_results,
+)
 import logging
 
 logging.basicConfig(
@@ -50,7 +53,12 @@ def main():
     p1.terminate()
 
     packet_trace = read_packet_trace(gateway_trace_filename)
-    metrics = metrics_from_trace(packet_trace, packet_trace)
+    node_metrics_dataframe = extract_required_metrics_from_trace(
+        packet_trace, result_df
+    )
+    expt_results_df = compute_experiment_results(node_metrics_dataframe, 30)
+
+    pdb.set_trace()
 
 
 if __name__ == "__main__":
