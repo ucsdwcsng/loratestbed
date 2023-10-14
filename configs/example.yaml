@@ -1,12 +1,13 @@
-device_list: [33, 26]
-experiment_time_sec: 10
-transmit_interval_msec: 200
+device_list: [33, 26] # List of device IDs
+experiment_time_sec: 10 # Experiment time in seconds
+transmit_interval_msec: 200 # Average time interval between consecutive transmissions from each device
 packet_size_bytes: 16
-mac_protocol: "csma"
-packet_arrival_model: "poisson"
-transmit_SF: "SF8"
+mac_protocol: "csma" # MAC protocol used by the devices
+packet_arrival_model: "poisson" # Packet generation model used by the devices.
+# PHY layer parameters
+transmit_SF: "SF8" # Spreading factor
 receive_SF: "SF8"
-transmit_BW: "BW125"
+transmit_BW: "BW125" # Bandwidth: "BW125", "BW250", "BW500
 receive_BW: "BW125"
-transmit_CR: "CR_4_8"
+transmit_CR: "CR_4_8" # Code rate
 receive_CR: "CR_4_8"
