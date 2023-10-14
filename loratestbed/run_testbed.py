@@ -4,7 +4,7 @@ import pdb
 import time
 import yaml
 import multiprocessing
-
+import os
 
 from loratestbed.main_controller import run_controller
 from loratestbed.main_gateway import run_gateway
@@ -14,7 +14,6 @@ from loratestbed.metrics import (
     compute_experiment_results,
     generate_plots,
 )
-import logging
 
 logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] %(message)s",
@@ -64,14 +63,14 @@ def main():
     network_capacity_bps = expt_results_df.network_capacity_bps.iloc[0]
 
     # print network statistics:
-    print(f"Network Capacity: {network_capacity_bps:.2f} bps")
-    print(
+    logging.info(f"Network Capacity: {network_capacity_bps:.2f} bps")
+    logging.info(
         f"Total Offered Load: {total_offered_load*100:.2f}% ({network_capacity_bps*total_offered_load:.2f} bps)"
     )
-    print(
+    logging.info(
         f"Total Normalized Throughput: {total_normalized_throughput*100:.2f}% ({network_capacity_bps*total_normalized_throughput:.2f} bps)"
     )
-    print(
+    logging.info(
         expt_results_df[
             [
                 "node_indices",
@@ -81,6 +80,21 @@ def main():
             ]
         ]
     )
+
+    # Get current time as a string
+    current_time = time.strftime("%Y%m%d-%H%M%S")
+    # Create results folder if it doesn't exist
+    results_folder = "./results"
+    if not os.path.exists(results_folder):
+        os.makedirs(results_folder)
+    # Save results to pickle file
+    results_filename = f"{results_folder}/results-{current_time}.pkl"
+    expt_results_df.to_pickle(results_filename)
+    # Save configs to yaml file
+    config_filename = f"{results_folder}/config-{current_time}.yaml"
+    with open(config_filename, "w") as f:
+        yaml.dump(config, f)
+    logging.info(f"Saved results to {results_filename}, configs to {config_filename}")
 
 
 if __name__ == "__main__":
