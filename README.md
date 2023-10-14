@@ -8,7 +8,7 @@ An infrastructure-less, arduino-compatible LoRa testbed for PHY and MAC research
 ## Run a simple experiment with an example configuration
 
 ```bash
-poetry run python3 ./loratestbed/main_demo.py -g /dev/ttyACM0 -c /dev/ttyACM1 --config ./configs/example.yaml
+poetry run python3 ./loratestbed/run_testbed.py -g /dev/ttyACM0 -c /dev/ttyACM1 --config ./configs/example.yaml
 ```
 
 You will need to have device ID 33 and 26 active to run this successfully.
