@@ -85,6 +85,9 @@ def main():
         "transmit_BW": "BW125", "receive_BW": "BW125", #("BW125", "BW250", "BW500", BW_RFU")
         "transmit_CR": "CR_4_8", "receive_CR": "CR_4_8", #("CR_4_5", "CR_4_6", "CR_4_7", "CR_4_8")
         }
+    
+    # updating MAC Params
+    device_manager.set_mac_protocol("Aloha", 12, 64*12)
 
     # updating parameters (comment params that are not required to change)
     device_manager.update_node_params( 
@@ -108,8 +111,8 @@ def main():
     gateway_timeout = node_params["experiment_time_sec"]+10
 
     # run_gateway(gateway_baudrate, gateway_port, gateway_filename,gateway_timeout)
-    # run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
-    run_experiment (device_manager, node_params["experiment_time_sec"], controller_filename, gateway_port, gateway_filename, gateway_timeout, gateway_baudrate)
+    run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
+    # run_experiment (device_manager, node_params["experiment_time_sec"], controller_filename, gateway_port, gateway_filename, gateway_timeout, gateway_baudrate)
     
     # add experiment in logbook datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     expt_params = {

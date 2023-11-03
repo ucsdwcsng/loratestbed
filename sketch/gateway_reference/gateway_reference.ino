@@ -154,6 +154,7 @@ void setup()
   LMIC.radio_txpow = 21; // WCSNG
 
   Serial.flush();
+  Serial.println("Hi, this is gateway rx");
 
   // setup initial job
   os_setCallback(&arbiter_job, rx_func);

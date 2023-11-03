@@ -55,7 +55,7 @@
 // See this spreadsheet for an easy airtime and duty cycle calculator:
 // https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc
 
-#define NODE_IDX 40
+#define NODE_IDX 28
 #define RSSI_RESET_VAL 128
 #define SCHEDULE_LEN 10
 #define FREQ_EXPT 915000000
@@ -130,6 +130,11 @@ byte buf_tx[16];
 // 47: Result - LBT Counter Byte 1
 // 48: Result - LBT Counter Byte 2
 
+//-------------- FSMA --------------
+// 49: Enable FSMA
+// 50: Listen before talk min RSSI s1_t
+// 51: Enable Exponential backoff
+
 // For Ref
 // enum _cr_t { CR_4_5=0, CR_4_6, CR_4_7, CR_4_8 };
 // enum _sf_t { FSK=0, SF7, SF8, SF9, SF10, SF11, SF12, SFrfu };
@@ -142,7 +147,7 @@ ostime_t expt_start_time, expt_stop_time; // 1ms is 62.5 os ticks
 int arbiter_state;
 u4_t scheduler_list_ms[SCHEDULE_LEN];
 
-u1_t freq_expt_ind, freq_cnfg_ind;
+u1_t freq_expt_ind, freq_cad_ind, freq_cnfg_ind;
 u4_t trx_freq_vec[24];
 
 u4_t multi_tx_packet_ctr;
@@ -355,9 +360,16 @@ static void prepare_multi_tx()
   LMIC.lbt_dbmax = reg_array[22];                  // Listen before talk max RSSI s1_t
   LMIC.sysname_kill_cad_delay = reg_array[23];     // Kill CAD Wait time (0 or 1)
 
+  // FSMA params
+  LMIC.sysname_enable_FSMA = reg_array[49];
+  LMIC.sysname_lbt_dbmin = reg_array[50]; // > -188 (-118 and below are decting as false positive for cad)
+  LMIC.sysname_enable_exponential_backoff = reg_array[51];
+
   // Change the center frequency
   LMIC.freq = trx_freq_vec[freq_expt_ind]; // WCSNG
   LMIC.sysname_cad_freq_vec[0] = trx_freq_vec[freq_expt_ind];
+  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_cad_ind];
+  
   // Set the RPS
   LMIC.sysname_tx_rps = MAKERPS(reg_array[17] >> 4, reg_array[18] >> 4, reg_array[19] >> 4, 0, 0);  // WCSNG
   LMIC.sysname_cad_rps = MAKERPS(reg_array[17] % 16, reg_array[18] % 16, reg_array[19] % 16, 0, 0); // WCSNG
@@ -404,6 +416,11 @@ static void store_multitx_results()
   LMIC.lbt_ticks = 0;              // Listen before talk ticks (x16)
   LMIC.lbt_dbmax = 0;              // Listen before talk max RSSI s1_t
   LMIC.sysname_kill_cad_delay = 0; // Kill CAD Wait time (0 or 1)
+
+  // Resetting FSMA params
+  LMIC.sysname_enable_FSMA = 0;
+  LMIC.sysname_lbt_dbmin = -116; // > -188 (-118 and below are decting as false positive for cad)
+  LMIC.sysname_enable_exponential_backoff = 0;
 }
 
 static void timestamp_readback(osjob_t *job)
@@ -751,14 +768,22 @@ void setup()
     trx_freq_vec[idx] = 904000000 + ((u4_t)idx) * 1000000;
   }
 
+  freq_cad_ind = 14;
   freq_expt_ind = 16;
   freq_cnfg_ind = 18; // 13
   // Set the LMIC CAD Frequencies
   LMIC.freq = trx_freq_vec[freq_cnfg_ind]; // WCSNG
   LMIC.sysname_cad_freq_vec[0] = trx_freq_vec[freq_expt_ind];
-  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_expt_ind] - 1000000;
-  LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind] - 2000000;
-  LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind] - 4000000;
+  LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_cad_ind];
+  // LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind] - 2000000;
+  // LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind] - 4000000;
+
+  // Set the LMIC CAD Frequencies
+  LMIC.freq = 922000000;  // WCSNG
+  LMIC.sysname_cad_freq_vec[0] = 920000000; // reverse for gateway
+  LMIC.sysname_cad_freq_vec[1] = 922000000;// reverse for gateway
+  // LMIC.sysname_cad_freq_vec[2] = 920000000 - 2000000;
+  // LMIC.sysname_cad_freq_vec[3] = 920000000 - 4000000;
 
   Serial.flush();
 
@@ -788,10 +813,14 @@ void setup()
   reg_array[23] = 1;   // Kill CAD Wait time (0 or 1)
 
   reg_array[45] = 10; // Variance if using periodic scheduling
-
-  //
   LMIC.sysname_kill_cad_delay = 1; // Kill CAD Wait time (0 or 1)
-  //
+  
+  // FSMA
+  reg_array[49] = 0; // Diasble FSMA  
+  reg_array[50] = -116; // Listen before talk min RSSI s1_T
+  reg_array[51] = 0; // Disable exponential backoff
+  LMIC.sysname_is_FSMA_node = 1;
+  LMIC.sysname_enable_variable_cad_difs = 0;
 
   for (byte idx = 0; idx < 20; idx++)
     reg_array[24 + idx] = RSSI_RESET_VAL;
