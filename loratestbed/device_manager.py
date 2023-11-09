@@ -189,6 +189,7 @@ class DeviceManager:
         return pingable_devices
 
     def _read_all_device_regs(self, device_idxs: List[int]):
+        ping_limit = 5  # ping for max 5 times
         if not isinstance(device_idxs, list):
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):

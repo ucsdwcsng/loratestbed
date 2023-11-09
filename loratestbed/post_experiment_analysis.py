@@ -67,8 +67,8 @@ def compute_experiment_results(
         node_metrics_df, total_experiment_time, desired_node_indices
     )
     print("------------Computed node metrics (all nodes) -------------")
-    for key, value in node_metrics_dict.items():
-        print(f"{key}: {value}")
+    # for key, value in node_metrics_dict.items():
+    #     print(f"{key}: {value}")
 
     expt_results_df = pd.DataFrame()
     for node_ind in desired_node_indices:
@@ -140,6 +140,7 @@ def main():
     expt_results_df = compute_experiment_results(node_metrics_df, total_experiment_time)
 
     # generate_plots(expt_results_df)
+
 
 
 # starts from here
