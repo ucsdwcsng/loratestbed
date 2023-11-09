@@ -310,45 +310,6 @@ class DeviceManager:
             else:
                 raise ValueError(f"{protocol} is not supported")
 
-    def set_mac_protocol(
-        self, protocol: str, min_backoff_ms: int = 12, max_backoff_ms: int = 64 * 12
-    ):
-        # Below is for LMAC
-        # [CAD_REG, DIFS, BACKOFF TIMEms, MAX BACKOFFMULT, CADTYPECNFG, LBT_TICKS, LBT_MAX_RSSI]
-        # expt_params.cad_cnfg_cell = {repmat([1 2 12 64 0 8 -90],com_node_num,1),...
-        if not isinstance(protocol, str):
-            raise ValueError("Input must be a string")
-        isCSMA = protocol.lower() == "csma"
-        isALOHA = protocol.lower() == "aloha"
-
-        backoff_multiplier = max_backoff_ms // min_backoff_ms
-
-        for device_idx in self._device_idxs:
-            if isCSMA:
-                # set CAD reg to 1:
-                self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 1)
-                self._write_device_reg(device_idx, LoRaRegister.CAD_CONFIG, 0)
-                self._write_device_reg(device_idx, LoRaRegister.DIFS_AS_NUM_OF_CADS, 3)
-                self._write_device_reg(
-                    device_idx, LoRaRegister.BACKOFF_CFG1_UNIT_LENGTH_MS, min_backoff_ms
-                )
-                self._write_device_reg(
-                    device_idx,
-                    LoRaRegister.BACKOFF_CFG2_MAX_MULTIPLIER,
-                    backoff_multiplier,
-                )
-                self._write_device_reg(device_idx, LoRaRegister.LBT_TICKS_X16, 8)
-                self._write_device_reg(
-                    device_idx,
-                    LoRaRegister.LBT_MAX_RSSI_S1_T,
-                    int(np.int8(-90).view(np.uint8)),
-                )
-                self._write_device_reg(device_idx, LoRaRegister.KILL_CAD_WAIT_TIME, 1)
-            elif isALOHA:
-                self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 0)
-            else:
-                raise ValueError(f"{protocol} is not supported")
-
     # Setting packet arrival model at node: periodic or poisson (if periodic add optional variance)
     def _set_packet_arrival_model(self, arrival_model: str, variance_ms=None):
         if not isinstance(arrival_model, str):
