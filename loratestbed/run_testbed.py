@@ -14,7 +14,6 @@ from loratestbed.metrics import (
     read_packet_trace,
     extract_required_metrics_from_trace,
     compute_experiment_results,
-    generate_plots,
 )
 from loratestbed.experiment_logbook import logbook_add_entry
 
