@@ -55,7 +55,7 @@
 // See this spreadsheet for an easy airtime and duty cycle calculator:
 // https://docs.google.com/spreadsheets/d/1voGAtQAjC1qBmaVuP1ApNKs1ekgUjavHuVQIXyYSvNc
 
-#define NODE_IDX 28
+#define NODE_IDX 26
 #define RSSI_RESET_VAL 128
 #define SCHEDULE_LEN 10
 #define FREQ_EXPT 915000000
@@ -236,7 +236,22 @@ static void rxdone_func(osjob_t *job)
   buf_in[2] = LMIC.frame[2];
   buf_in[3] = LMIC.frame[3];
 
-  Serial.print("CRC Number: ");
+  Serial.print("[");
+  Serial.print(buf_in[0]);
+  Serial.print(",");
+  Serial.print(buf_in[1]);
+  Serial.print(",");
+  Serial.print(buf_in[2]);
+  Serial.print(",");
+  Serial.print(buf_in[3]);
+  Serial.print("]");
+  Serial.print(";");
+  
+  Serial.print("RSSI: ");
+  Serial.print(LMIC.rssi);
+  Serial.print("; ");
+
+  Serial.print("CRC: ");
   Serial.print(LMIC.sysname_crc_err);
   Serial.print("\n");
 
@@ -777,13 +792,6 @@ void setup()
   LMIC.sysname_cad_freq_vec[1] = trx_freq_vec[freq_cad_ind];
   // LMIC.sysname_cad_freq_vec[2] = trx_freq_vec[freq_expt_ind] - 2000000;
   // LMIC.sysname_cad_freq_vec[3] = trx_freq_vec[freq_expt_ind] - 4000000;
-
-  // Set the LMIC CAD Frequencies
-  LMIC.freq = 922000000;  // WCSNG
-  LMIC.sysname_cad_freq_vec[0] = 920000000; // reverse for gateway
-  LMIC.sysname_cad_freq_vec[1] = 922000000;// reverse for gateway
-  // LMIC.sysname_cad_freq_vec[2] = 920000000 - 2000000;
-  // LMIC.sysname_cad_freq_vec[3] = 920000000 - 4000000;
 
   Serial.flush();
 
