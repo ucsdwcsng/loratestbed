@@ -20,7 +20,7 @@ The configuration YAML file should necessarily have the following format/fields:
 ```yaml
 device_list: [33, 26] # List of device IDs
 experiment_time_sec: 10 # Experiment time in seconds
-transmit_interval_msec: 200 # Average time interval between consecutive transmissions from each device
+offered_load_percent: 80 # Aggregate network offered load
 packet_size_bytes: 16
 mac_protocol: "csma" # MAC protocol used by the devices
 packet_arrival_model: "poisson" # Packet generation model used by the devices.
