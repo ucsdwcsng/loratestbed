@@ -25,7 +25,7 @@ def load_config(yaml_path):
         config = yaml.safe_load(f)
 
     # Compute interval from offered load
-    transmit_interval_msec = get_transmit_interval_msec(
+    transmit_interval_msec, packet_airtime_sec = get_transmit_interval_msec(
         len(config["device_list"]),
         config["offered_load_percent"],
         config["packet_size_bytes"],
@@ -33,6 +33,7 @@ def load_config(yaml_path):
         config["transmit_BW"],
         config["transmit_CR"],
     )
+    config["packet_airtime_sec"] = packet_airtime_sec
     config["transmit_interval_msec"] = transmit_interval_msec
     logger.info(
         f"Interval is {transmit_interval_msec} ms for {config['offered_load_percent']}% load and {len(config['device_list'])} devices"

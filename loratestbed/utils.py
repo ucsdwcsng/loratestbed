@@ -84,6 +84,19 @@ def get_transmit_interval_msec(
     transmit_BW: int,
     transmit_CR: str,
 ):
+    """_summary_
+
+    Args:
+        num_devices (int): _description_
+        offered_load_percent (float): _description_
+        packet_size_bytes (int): _description_
+        transmit_SF (int): _description_
+        transmit_BW (int): _description_
+        transmit_CR (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
     packet_time_sec: float = compute_packet_time(
         packet_size_bytes, transmit_SF, transmit_BW, transmit_CR
     )
@@ -99,4 +112,4 @@ def get_transmit_interval_msec(
     transmit_interval_sec: float = 1 / net_pack_per_sec_per_device
     transmit_interval_msec: int = int(transmit_interval_sec * 1000)
 
-    return transmit_interval_msec
+    return transmit_interval_msec, packet_time_sec

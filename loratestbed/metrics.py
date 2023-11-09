@@ -80,7 +80,12 @@ def extract_required_metrics_from_trace(
 
 
 def compute_node_metrics(
-    dataframe: pd.DataFrame, total_experiment_time: int, desired_node_indices=None
+    dataframe: pd.DataFrame,
+    total_experiment_time: int,
+    packet_airtime_sec: float,
+    packet_size_bytes: int,
+    offered_load_percent: float,
+    desired_node_indices=None,
 ):
     # if no argument is given, read from all nodes
     if desired_node_indices is None:
@@ -102,23 +107,16 @@ def compute_node_metrics(
         print(f"No transmitted packets with node_indices: {desired_node_indices}")
         return {}
 
-    # known_values
-    packet_duration = 0.126  # 126 ms
-    packet_bytes = 16  # 16 bytes
-    no_bits_in_byte = 8
-    logger.warning(
-        f"Using hard-coded values for packet duration: {packet_duration}, packet bytes {packet_bytes}"
-    )
-
     # computed metrics
     missing_packets = total_transmitted_packets - received_packets
     packet_reception_ratio = 1 - (missing_packets / total_transmitted_packets)
-    packet_bits = packet_bytes * no_bits_in_byte
+    packet_bits = packet_size_bytes * 8
     throughput = received_packets * packet_bits / total_experiment_time
-    network_capacity = packet_bits / packet_duration
+    network_capacity = packet_bits / packet_airtime_sec
     normalized_throughput = throughput / network_capacity
-    offered_load = total_transmitted_packets * packet_bits / total_experiment_time
-    normalized_offered_load = offered_load / network_capacity
+
+    offered_load_bps = network_capacity * offered_load_percent / 100
+    normalized_offered_load = offered_load_percent / 100
 
     node_metrics_dict = {}
     if len(desired_node_indices) == 1:
@@ -126,7 +124,7 @@ def compute_node_metrics(
     node_metrics_dict["total_packets"] = total_transmitted_packets
     node_metrics_dict["missing_packets"] = missing_packets
     node_metrics_dict["packet_reception_ratio"] = packet_reception_ratio
-    node_metrics_dict["offered_load_bps"] = offered_load
+    node_metrics_dict["offered_load_bps"] = offered_load_bps
     node_metrics_dict["throughput_bps"] = throughput
     node_metrics_dict["network_capacity_bps"] = network_capacity
     node_metrics_dict["normalized_throughput"] = normalized_throughput
@@ -137,14 +135,26 @@ def compute_node_metrics(
 
 
 def compute_experiment_results(
-    node_metrics_df: pd.DataFrame, experiment_time_sec: float, **kwargs
+    node_metrics_df: pd.DataFrame,
+    experiment_time_sec: float,
+    packet_airtime_sec: float,
+    packet_size_bytes: int,
+    offered_load_percent: float,
+    **kwargs,
 ):
     desired_node_indices = node_metrics_df["NodeAddress"].unique()
+    num_nodes = len(desired_node_indices)
+    per_node_offered_load_percent = offered_load_percent / num_nodes
 
     expt_results_df = pd.DataFrame()
     for node_ind in desired_node_indices:
         desired_node_metrics_dict = compute_node_metrics(
-            node_metrics_df, experiment_time_sec, node_ind
+            node_metrics_df,
+            experiment_time_sec,
+            packet_airtime_sec,
+            packet_size_bytes,
+            per_node_offered_load_percent,
+            node_ind,
         )
         expt_results_df = expt_results_df._append(
             desired_node_metrics_dict, ignore_index=True
