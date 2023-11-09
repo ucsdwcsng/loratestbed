@@ -90,7 +90,7 @@ def main():
     total_experiment_time = 30 
     expt_results_df = compute_experiment_results(node_metrics_df, total_experiment_time)
 
-    generate_plots(expt_results_df)
+    # generate_plots(expt_results_df)
 
 # starts from here
 if __name__ == "__main__":

@@ -14,8 +14,8 @@ from loratestbed.experiment_logbook import logbook_add_entry
 
 def make_parser():
     ap = argparse.ArgumentParser()
-    ap.add_argument("-p", "--controller_port", required=True, help="Enter Port Name")
-    ap.add_argument("-p2", "--gateway_port", required=True, help="Enter Port Name")
+    ap.add_argument("-cp", "--controller_port", required=True, help="Enter Port Name")
+    ap.add_argument("-gp", "--gateway_port", required=True, help="Enter Port Name")
 
     return ap
 
@@ -68,16 +68,21 @@ def main():
     parser = make_parser()
     args = parser.parse_args()
 
-    device_list = [25,27,30,31,34]
+    device_list = [26, 27, 28, 29, 33]
     # device_list = [25, 26, 28, 29, 32, 33, 34]
     interface = SerialInterface(args.controller_port)
     logging.info("Setting up DeviceManager")
     device_manager = DeviceManager(device_list, interface)
+    logging.info("Disabling all devices in range")
     device_manager.disable_all_devices()# Disable all devices, later only set experiment time to the desired nodes
+
+    # updating MAC Params
+    logging.info("Updating MAC params")
+    device_manager.set_mac_protocol("ALOHA", 12, 64*12)
 
     # initialzing node parameters
     node_params = { 
-        "experiment_time_sec": 30,
+        "experiment_time_sec": 60,
         "transmit_interval_msec": 1000,
         "packet_arrival_model": "POISSON",  #("PERIODIC", "POISSON")
         "periodic_variance_x10_msec": 0,
@@ -86,9 +91,6 @@ def main():
         "transmit_CR": "CR_4_8", "receive_CR": "CR_4_8", #("CR_4_5", "CR_4_6", "CR_4_7", "CR_4_8")
         }
     
-    # updating MAC Params
-    device_manager.set_mac_protocol("Aloha", 12, 64*12)
-
     # updating parameters (comment params that are not required to change)
     device_manager.update_node_params( 
         EXPT_TIME = [node_params["experiment_time_sec"]], 
@@ -111,8 +113,8 @@ def main():
     gateway_timeout = node_params["experiment_time_sec"]+10
 
     # run_gateway(gateway_baudrate, gateway_port, gateway_filename,gateway_timeout)
-    run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
-    # run_experiment (device_manager, node_params["experiment_time_sec"], controller_filename, gateway_port, gateway_filename, gateway_timeout, gateway_baudrate)
+    # run_controller(device_manager, node_params["experiment_time_sec"], controller_filename)
+    run_experiment (device_manager, node_params["experiment_time_sec"], controller_filename, gateway_port, gateway_filename, gateway_timeout, gateway_baudrate)
     
     # add experiment in logbook datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
     expt_params = {

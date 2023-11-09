@@ -4,7 +4,7 @@ import loratestbed.utils as utils
 import logging
 import numpy as np
 from enum import Enum
-
+import time
 
 class SerialInterface:
     """Serial Interface for communicating with the LoRa Testbed Controller"""
@@ -44,13 +44,15 @@ class SerialInterface:
         return self._serial_port.read(data_len)
 
     def _write_read_bytes(self, data: bytes):
-        ret_int_list = None
+        # ret_int_list = None
+        repeat_condition = True
         ping_node_again = 5 # if read empty try again upto x(5) times
-        
-        while (ret_int_list is None and ping_node_again > 0):
+        while (repeat_condition and ping_node_again > 0):
             self._write_bytes(data)
+            time.sleep(0.05) # wait for 50 ms
             ret_int_list = self._read_bytes(len(data))
             ping_node_again = ping_node_again - 1
+            repeat_condition = ((ret_int_list is None) or (ret_int_list[0] != data[0]) or (ret_int_list[2] != data[2])) # 0th (dummy 1) and 2nd (operation type) indices should always be same
 
         return ret_int_list
 
