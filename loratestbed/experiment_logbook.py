@@ -22,7 +22,7 @@ def logbook_add_entry(logbook_file, expt_params):
         }
     )
 
-    logbook = logbook.append(new_entry, ignore_index=True)
+    logbook = logbook._append(new_entry, ignore_index=True)
     logbook.to_csv(logbook_file, index=False)
 
 
