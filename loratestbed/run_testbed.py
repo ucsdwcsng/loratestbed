@@ -32,6 +32,17 @@ def make_parser():
     ap.add_argument(
         "--config", required=True, help="Path to the YAML configuration file"
     )
+    # Add experiment name and comment as two different arguments
+    ap.add_argument(
+        "--experiment_name",
+        default="Experiment 1",
+        help="Experiment Name",
+    )
+    ap.add_argument(
+        "--logbook_message",
+        default="LoRa hardware experiments",
+        help="Message for logbook",
+    )
     return ap
 
 
@@ -80,6 +91,8 @@ def main():
                 "total_packets",
                 "packet_reception_ratio",
                 "throughput_bps",
+                "normalized_throughput",
+                "normalized_offered_load",
             ]
         ]
     )
@@ -105,13 +118,13 @@ def main():
     # Update the experiment parameters to include filenames of results and config
     expt_params = {
         "date_time_str": current_time,
-        "expt_name": "Experiment 1",
+        "expt_name": args.experiment_name,
         "expt_version": 1.0,
         "experiment_time_sec": config["experiment_time_sec"],
         "controller_filename": results_filename,  # Updated to include the results filename
         "gateway_filename": gateway_filename,  # Assuming there's no gateway file in the first code snippet
         "metadata_filename": config_filename,  # Updated to include the config filename
-        "logbook_message": "LoRa hardware experiments",
+        "logbook_message": args.logbook_message,
     }
     logbook_add_entry(logbook_filename, expt_params)
 
