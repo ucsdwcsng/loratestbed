@@ -6,6 +6,7 @@ import yaml
 import multiprocessing
 import os
 import datetime
+import shutil
 
 from loratestbed.main_controller import run_controller
 from loratestbed.main_gateway import run_gateway
@@ -96,7 +97,7 @@ def main():
     logging.info(f"Saved results to {results_filename}, configs to {config_filename}")
     gateway_filename = f"{results_folder}/gateway-{current_time}.csv"
     # copy gateway_trace_filename to gateway_filename
-    os.rename(gateway_trace_filename, gateway_filename)
+    shutil.copy(gateway_trace_filename, gateway_filename)
 
     # Second code: Logbook functionality
     logbook_filename = f"{results_folder}/experiment_logbook.csv"
