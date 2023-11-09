@@ -4,6 +4,7 @@ import loratestbed.utils as utils
 import logging
 import numpy as np
 from enum import Enum
+import time
 
 
 class SerialInterface:

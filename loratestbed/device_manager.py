@@ -11,7 +11,7 @@ from loratestbed.controller import SerialInterface
 
 
 # Self describing MACRO
-REG_ARRAY_LENGTH = 50
+REG_ARRAY_LENGTH = 64
 
 
 class LoRaRegister(Enum):
@@ -75,6 +75,11 @@ class LoRaRegister(Enum):
     # Other
     PERIODIC_TX_VARIANCE_X10_MS = 45
 
+    # FSMA
+    ENABLE_FSMA = 49
+    LBT_MIN_RSSI_S1_T = 50
+    ENABLE_EXPONENTIAL_BACKOFF = 51
+
 
 RESULT_REGISTERS = [
     LoRaRegister.RESULT_COUNTER_BYTE_0,
@@ -104,7 +109,7 @@ class DeviceManager:
         self._device_states = np.zeros(
             (self._num_devices, REG_ARRAY_LENGTH), dtype=np.uint8
         )
-        self._read_all_device_regs(self._device_idxs)
+        # self._read_all_device_regs(self._device_idxs)
 
     def _message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
@@ -123,9 +128,19 @@ class DeviceManager:
         message_bytes = b"".join([utils.uint8_to_bytes(m) for m in message])
 
         # Message format: 1, device_idx, message
-        read_bytes = self._serial_interface._write_read_bytes(
-            b"\x01" + device_idx_bytes + message_bytes
-        )
+        data_to_send = b"\x01" + device_idx_bytes + message_bytes
+
+        repeat_condition = True
+        ping_node_again = self._ping_limit
+        while repeat_condition and ping_node_again > 0:
+            read_bytes = self._serial_interface._write_read_bytes(data_to_send)
+            ping_node_again -= 1
+            # 0th (dummy 1) and 2nd (operation type) indices should always be same
+            repeat_condition = (
+                (read_bytes is None)
+                or (read_bytes[0] != data_to_send[0])
+                or (read_bytes[2] != data_to_send[2])
+            )
 
         # Convert each read byte to int:
         read_bytes_int: List[int] = [utils.bytes_to_uint8([b]) for b in read_bytes]
@@ -179,12 +194,8 @@ class DeviceManager:
             device_idxs = [device_idxs]
         for id, device_idx in enumerate(device_idxs):
             for reg_id in LoRaRegister:
-                ret_int_list = None
-                ping_node_again = self._ping_limit
-                while ret_int_list is None and ping_node_again > 0:
-                    ret_int_list = self._device_reg(device_idx, reg_id)
-                    ping_node_again = ping_node_again - 1
-                if ping_node_again == 0:
+                ret_int_list = self._device_reg(device_idx, reg_id)
+                if ret_int_list is None:
                     ret_int_list = [0]
                     self._logger.warning(
                         f"Device {device_idx}'s register {reg_id} did not respond, default 0"
@@ -241,11 +252,38 @@ class DeviceManager:
             raise ValueError("Input must be a string")
         isCSMA = protocol.lower() == "csma"
         isALOHA = protocol.lower() == "aloha"
+        isFSMA = protocol.lower() == "fsma"
 
         backoff_multiplier = max_backoff_ms // min_backoff_ms
 
         for device_idx in self._device_idxs:
-            if isCSMA:
+            if isFSMA:
+                # FSMA specific
+                self._write_device_reg(device_idx, LoRaRegister.ENABLE_FSMA, 1)
+                self._write_device_reg(
+                    device_idx,
+                    LoRaRegister.LBT_MIN_RSSI_S1_T,
+                    int(np.int8(-116).view(np.uint8)),
+                )
+                self._write_device_reg(
+                    device_idx, LoRaRegister.ENABLE_EXPONENTIAL_BACKOFF, 0
+                )
+
+                # CAD specific
+                self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 1)
+                self._write_device_reg(device_idx, LoRaRegister.CAD_CONFIG, 0)
+                self._write_device_reg(device_idx, LoRaRegister.DIFS_AS_NUM_OF_CADS, 2)
+                self._write_device_reg(
+                    device_idx, LoRaRegister.BACKOFF_CFG1_UNIT_LENGTH_MS, min_backoff_ms
+                )
+                self._write_device_reg(
+                    device_idx,
+                    LoRaRegister.BACKOFF_CFG2_MAX_MULTIPLIER,
+                    backoff_multiplier,
+                )
+                self._write_device_reg(device_idx, LoRaRegister.LBT_TICKS_X16, 8)
+                self._write_device_reg(device_idx, LoRaRegister.KILL_CAD_WAIT_TIME, 1)
+            elif isCSMA:
                 # set CAD reg to 1:
                 self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 1)
                 self._write_device_reg(device_idx, LoRaRegister.CAD_CONFIG, 0)
@@ -265,8 +303,10 @@ class DeviceManager:
                     int(np.int8(-90).view(np.uint8)),
                 )
                 self._write_device_reg(device_idx, LoRaRegister.KILL_CAD_WAIT_TIME, 1)
+                self._write_device_reg(device_idx, LoRaRegister.ENABLE_FSMA, 0)
             elif isALOHA:
                 self._write_device_reg(device_idx, LoRaRegister.ENABLE_CAD, 0)
+                self._write_device_reg(device_idx, LoRaRegister.ENABLE_FSMA, 0)
             else:
                 raise ValueError(f"{protocol} is not supported")
 
@@ -533,14 +573,8 @@ class DeviceManager:
         for id, device_idx in enumerate(self._device_idxs):
             results[id, 0] = int(device_idx)
             for reg_series, reg_id in enumerate(result_registers):
-                ret_int_list = None
-                ping_node_again = self._ping_limit
-
-                # Read until return int list is not none (or) retry for given _ping_limit
-                while ret_int_list is None and ping_node_again > 0:
-                    ret_int_list = self._device_reg(device_idx, reg_id)
-                    ping_node_again = ping_node_again - 1
-                if ping_node_again == 0:
+                ret_int_list = self._device_reg(device_idx, reg_id)
+                if ret_int_list is None:
                     ret_int_list = [0]
                     self._logger.warning(
                         f"Device {device_idx}'s register {reg_id} did not respond, default 0"

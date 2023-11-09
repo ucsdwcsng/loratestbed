@@ -7,6 +7,7 @@ import yaml
 from loratestbed.controller import SerialInterface
 from loratestbed.device_manager import DeviceManager
 from loratestbed.main_gateway import run_gateway
+from loratestbed.experiment_logbook import logbook_add_entry
 
 
 def make_parser():
@@ -34,7 +35,6 @@ def main():
 
     parser = make_parser()
     args = parser.parse_args()
-
     run_controller(args.port, args.config)
 
 

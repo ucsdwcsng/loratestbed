@@ -4,6 +4,36 @@ import struct
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 import pdb
+import math
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def comp_lora_airtime(PL, SF, CRC, IH, DE, CR, SR, NS):
+    """
+    Compute Airtime of LoRa
+    PL: number of payload bytes
+    SF: spreading factor
+    CRC: presence of a CRC (0 if absent, 1 if present)
+    IH: whether the header is enabled (0 if enabled, 1 if disabled)
+    DE: whether low data rate optimization is on (0 if disabled, 1 if enabled)
+    CR: the coding rate (1 meaning 4/5 rate, 4 meaning 4/8 rate)
+    SR: Sampling Rate
+    NS: Number of samples per chirp at sample rate
+    """
+    max_inp_1 = math.ceil(
+        (8 * PL - 4 * SF + 28 + 16 * CRC - 20 * IH) / (4 * (SF - 2 * DE))
+    ) * (CR + 4)
+    max_inp_2 = 0
+    max_val = max(max_inp_1, max_inp_2)
+
+    n_pb = 8 + max_val
+
+    air_time = NS * (n_pb + 12.25) / SR
+
+    return air_time
 
 
 def parse_byte_string(data):
@@ -162,6 +192,9 @@ def compute_node_metrics(
     packet_duration = 0.126  # 126 ms
     packet_bytes = 16  # 16 bytes
     no_bits_in_byte = 8
+    logger.warning(
+        f"Using hard-coded values for packet duration: {packet_duration}, packet bytes {packet_bytes}"
+    )
     # print(
     #     f"Assuming all nodes transmit known (same) packet length with duration {packet_duration*1000} ms and bytes {packet_bytes}"
     # )
@@ -207,64 +240,6 @@ def get_node_metrics_statistics(node_metric_list):
     return node_stats
 
 
-## Printers
-
-
-def print_node_statistics(node_data):
-    headers = ["Metric", "Value"]
-
-    snr_data = [
-        ["SNR Mean", node_data["SNR"]["mean"]],
-        ["SNR Std", node_data["SNR"]["std"]],
-        ["SNR Min", node_data["SNR"]["min"]],
-        ["SNR Max", node_data["SNR"]["max"]],
-        ["SNR 25th Percentile", node_data["SNR"]["percentiles"]["25th"]],
-        ["SNR 50th Percentile", node_data["SNR"]["percentiles"]["50th"]],
-        ["SNR 75th Percentile", node_data["SNR"]["percentiles"]["75th"]],
-    ]
-
-    rssi_data = [
-        ["RSSI Mean", node_data["RSSI"]["mean"]],
-        ["RSSI Std", node_data["RSSI"]["std"]],
-        ["RSSI Min", node_data["RSSI"]["min"]],
-        ["RSSI Max", node_data["RSSI"]["max"]],
-        ["RSSI 25th Percentile", node_data["RSSI"]["percentiles"]["25th"]],
-        ["RSSI 50th Percentile", node_data["RSSI"]["percentiles"]["50th"]],
-        ["RSSI 75th Percentile", node_data["RSSI"]["percentiles"]["75th"]],
-    ]
-
-    print("=== SNR Statistics ===")
-    print(tabulate(snr_data, headers=headers))
-    print("\n=== RSSI Statistics ===")
-    print(tabulate(rssi_data, headers=headers))
-    print(f"\nMissing Packets: {node_data['MissingPackets']}\n")
-    print("-" * 40)
-
-
-def print_statistics(result):
-    for node, data in result.items():
-        print(f"Node Address: {node}\n")
-        print_node_statistics(data)
-
-
-def capture_metrics(gateway_output_file: str, controller_output_file: str):
-    # reading gateway output file
-    packets_trace_from_gateway = read_packet_trace(gateway_output_file)
-
-    # reading cpontroller output file
-    column_names = ["NodeAddress", "TransmittedPackets", "BackoffCounter", "LBTCounter"]
-    controller_metrics_dict = pd.read_csv(
-        controller_output_file, header=None, names=column_names, index_col=False
-    )
-
-    # get combined node_metrics
-    node_metrics_dataframe = extract_required_metrics_from_trace(
-        packets_trace_from_gateway, controller_metrics_dict
-    )
-
-    return node_metrics_dataframe
-
-
 def compute_experiment_results(
     node_metrics_df: pd.DataFrame, experiment_time_sec: float, **kwargs
 ):
@@ -297,23 +272,3 @@ def compute_experiment_results(
     )
 
     return expt_results_df
-
-
-def generate_plots(experiment_results_df: pd.DataFrame):
-    snr_array_list = experiment_results_df["snr_values"].to_list()
-
-    print(
-        experiment_results_df[
-            [
-                "node_indices",
-                "total_packets",
-                "packet_reception_ratio",
-                "throughput_bps",
-            ]
-        ]
-    )
-
-    for snr_array in snr_array_list:
-        plt.plot(snr_array)
-    plt.title("SNR array values")
-    plt.show()

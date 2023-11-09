@@ -379,6 +379,7 @@ void setup()
   LMIC.radio_txpow = 21; // WCSNG
 
   Serial.flush();
+  Serial.println("Hi, this is controller");
 
   // Setup Registers
   buf_in[0] == 0;

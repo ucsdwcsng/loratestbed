@@ -2,7 +2,11 @@
 name = "loratestbed"
 version = "0.1.1"
 description = ""
-authors = ["Raghav Subbaraman <rsubbaraman@eng.ucsd.edu>","Abijit Jayachandran <ajayachandran@ucsd.edu>","Rohith Reddy Vennam <rvennam@ucsd.edu>"]
+authors = [
+    "Raghav Subbaraman <rsubbaraman@eng.ucsd.edu>",
+    "Abijit Jayachandran <ajayachandran@ucsd.edu>",
+    "Rohith Reddy Vennam <rvennam@ucsd.edu>",
+]
 readme = "README.md"
 
 [tool.poetry.dependencies]
