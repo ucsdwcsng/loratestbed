@@ -6,6 +6,11 @@ from tabulate import tabulate
 import pdb
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 def parse_byte_string(data):
     # unpack data from the byte string
     address, counter0, counter1, counter2 = struct.unpack("BBBB", data)
@@ -162,6 +167,9 @@ def compute_node_metrics(
     packet_duration = 0.126  # 126 ms
     packet_bytes = 16  # 16 bytes
     no_bits_in_byte = 8
+    logger.warning(
+        f"Using hard-coded values for packet duration: {packet_duration}, packet bytes {packet_bytes}"
+    )
     # print(
     #     f"Assuming all nodes transmit known (same) packet length with duration {packet_duration*1000} ms and bytes {packet_bytes}"
     # )
