@@ -46,23 +46,26 @@ def make_parser():
     return ap
 
 
-def main():
-    parser = make_parser()
-    args = parser.parse_args()
-
+def run_testbed(
+    gateway_port: str,
+    controller_port: str,
+    config_filename: str,
+    experiment_name: str = "",
+    logbook_message: str = "",
+):
     gateway_trace_filename: str = "/tmp/gateway.csv"
 
     p1 = multiprocessing.Process(
         target=run_gateway,
         args=(
             2000000,
-            args.gateway,
+            gateway_port,
             gateway_trace_filename,
         ),
     )
     p1.start()
 
-    result_df, config = run_controller(args.controller, args.config)
+    result_df, config = run_controller(controller_port, config_filename)
 
     p1.terminate()
 
@@ -118,15 +121,28 @@ def main():
     # Update the experiment parameters to include filenames of results and config
     expt_params = {
         "date_time_str": current_time,
-        "expt_name": args.experiment_name,
+        "expt_name": experiment_name,
         "expt_version": 1.0,
         "experiment_time_sec": config["experiment_time_sec"],
         "controller_filename": results_filename,  # Updated to include the results filename
         "gateway_filename": gateway_filename,  # Assuming there's no gateway file in the first code snippet
         "metadata_filename": config_filename,  # Updated to include the config filename
-        "logbook_message": args.logbook_message,
+        "logbook_message": logbook_message,
     }
     logbook_add_entry(logbook_filename, expt_params)
+
+
+def main():
+    parser = make_parser()
+    args = parser.parse_args()
+
+    run_testbed(
+        args.gateway,
+        args.controller,
+        args.config,
+        args.experiment_name,
+        args.logbook_message,
+    )
 
 
 if __name__ == "__main__":
