@@ -113,7 +113,6 @@ class DeviceManager:
 
     def _message_to_device(self, device_idx: int, message: List[int]):
         # check if device_idx is valid
-        time.sleep(0.1)
         if device_idx not in self._device_idxs and device_idx != 255:
             self._logger.warning(f"Device index {device_idx} not in list of devices")
             return None

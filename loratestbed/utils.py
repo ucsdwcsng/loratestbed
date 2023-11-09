@@ -42,7 +42,7 @@ def comp_lora_airtime(PL, SF, CRC, IH, DE, CR, SR, NS):
     return air_time
 
 
-def compute_packet_time(payload_bytes: int, sf: int, bw_str: str, cr_str: str):
+def compute_packet_time(payload_bytes: int, sf_str: str, bw_str: str, cr_str: str):
     """_summary_
 
     Args:
@@ -57,20 +57,21 @@ def compute_packet_time(payload_bytes: int, sf: int, bw_str: str, cr_str: str):
     Returns:
         _type_: _description_
     """
-    bw_khz = float(bw_str[2:])
+    bw_khz: float = float(bw_str[2:])
+    sf_int: int = int(sf_str[2:])
 
     if cr_str == "CR_4_8":
-        cr = 4
+        cr: int = 4
     elif cr_str == "CR_4_5":
-        cr = 1
+        cr: int = 1
     else:
         raise ValueError(f"Invalid CR value {cr_str}")
 
-    num_samples_per_chirp = 2**sf
-    sampling_rate = bw_khz * 1000
+    num_samples_per_chirp: int = 2**sf_int
+    sampling_rate: float = bw_khz * 1000
 
-    packet_time_sec = comp_lora_airtime(
-        payload_bytes, sf, 1, 0, 0, cr, sampling_rate, num_samples_per_chirp
+    packet_time_sec: float = comp_lora_airtime(
+        payload_bytes, sf_int, 1, 0, 0, cr, sampling_rate, num_samples_per_chirp
     )
 
     return packet_time_sec
@@ -84,6 +85,19 @@ def get_transmit_interval_msec(
     transmit_BW: int,
     transmit_CR: str,
 ):
+    """_summary_
+
+    Args:
+        num_devices (int): _description_
+        offered_load_percent (float): _description_
+        packet_size_bytes (int): _description_
+        transmit_SF (int): _description_
+        transmit_BW (int): _description_
+        transmit_CR (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
     packet_time_sec: float = compute_packet_time(
         packet_size_bytes, transmit_SF, transmit_BW, transmit_CR
     )
@@ -99,4 +113,4 @@ def get_transmit_interval_msec(
     transmit_interval_sec: float = 1 / net_pack_per_sec_per_device
     transmit_interval_msec: int = int(transmit_interval_sec * 1000)
 
-    return transmit_interval_msec
+    return transmit_interval_msec, packet_time_sec
