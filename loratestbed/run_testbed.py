@@ -5,6 +5,7 @@ import time
 import yaml
 import multiprocessing
 import os
+import datetime
 
 from loratestbed.main_controller import run_controller
 from loratestbed.main_gateway import run_gateway
@@ -14,6 +15,7 @@ from loratestbed.metrics import (
     compute_experiment_results,
     generate_plots,
 )
+from loratestbed.experiment_logbook import logbook_add_entry
 
 logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] %(message)s",
@@ -81,20 +83,36 @@ def main():
         ]
     )
 
-    # Get current time as a string
+    # First code: Saving results and config files
     current_time = time.strftime("%Y%m%d-%H%M%S")
-    # Create results folder if it doesn't exist
     results_folder = "./results"
     if not os.path.exists(results_folder):
         os.makedirs(results_folder)
-    # Save results to pickle file
     results_filename = f"{results_folder}/results-{current_time}.pkl"
     expt_results_df.to_pickle(results_filename)
-    # Save configs to yaml file
     config_filename = f"{results_folder}/config-{current_time}.yaml"
     with open(config_filename, "w") as f:
         yaml.dump(config, f)
     logging.info(f"Saved results to {results_filename}, configs to {config_filename}")
+    gateway_filename = f"{results_folder}/gateway-{current_time}.csv"
+    # copy gateway_trace_filename to gateway_filename
+    os.rename(gateway_trace_filename, gateway_filename)
+
+    # Second code: Logbook functionality
+    logbook_filename = f"{results_folder}/experiment_logbook.csv"
+
+    # Update the experiment parameters to include filenames of results and config
+    expt_params = {
+        "date_time_str": current_time,
+        "expt_name": "Experiment 1",
+        "expt_version": 1.0,
+        "experiment_time_sec": config["experiment_time_sec"],
+        "controller_filename": results_filename,  # Updated to include the results filename
+        "gateway_filename": gateway_filename,  # Assuming there's no gateway file in the first code snippet
+        "metadata_filename": config_filename,  # Updated to include the config filename
+        "logbook_message": "LoRa hardware experiments",
+    }
+    logbook_add_entry(logbook_filename, expt_params)
 
 
 if __name__ == "__main__":
