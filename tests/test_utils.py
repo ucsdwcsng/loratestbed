@@ -27,7 +27,7 @@ def test_uint8_two_way():
 
 def test_transmit_interval():
     packet_size_bytes = 16
-    sf_val = 8
+    sf_val = "SF8"
     bw_str = "BW125"
     cr_str = "CR_4_8"
 
