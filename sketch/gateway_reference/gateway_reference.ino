@@ -37,6 +37,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include <rp2040_flash_datalogger.h>
 // we formerly would check this configuration; but now there is a flag,
 // in the LMIC, LMIC.noRXIQinversion;
 // if we set that during init, we get the same effect.  If
@@ -62,10 +63,10 @@
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
-    .nss = D10,
-    .rxtx = LMIC_UNUSED_PIN,
-    .rst = A0,
-    .dio = {2, 3, 4},
+  .nss = D10,
+  .rxtx = LMIC_UNUSED_PIN,
+  .rst = A0,
+  .dio = {2, 3, 4},
 };
 
 // These callbacks are only used in over-the-air activation, so they are
@@ -83,6 +84,7 @@ void onEvent(ev_t ev)
 }
 
 osjob_t arbiter_job, backhaul_job;
+FlashWriter flash_writer;
 
 // Enable rx mode and call func when a packet is received
 void rx(osjobcb_t func)
@@ -104,21 +106,15 @@ static void backhaul_data(osjob_t *job)
   // Asynchronous backhaul job
   for (u2_t ind = 0; ind < LMIC.dataLen; ind++)
   {
-    if (LMIC.frame[ind] > 15)
-      Serial.print(LMIC.frame[ind], HEX);
-    else
-    {
-      Serial.print("0");
-      Serial.print(LMIC.frame[ind], HEX);
-    }
+    flash_writer.printf("%02X", LMIC.frame[ind]);
   }
-  Serial.print(", ");
-  Serial.print(LMIC.rssi);
-  Serial.print(", ");
-  Serial.print(LMIC.snr);
-  Serial.print(", ");
-  Serial.print(LMIC.sysname_crc_err);
-  Serial.print("\n");
+  flash_writer.print(", ");
+  flash_writer.printf("%d", LMIC.rssi);
+  flash_writer.print(", ");
+  flash_writer.printf("%d", LMIC.snr);
+  flash_writer.print(", ");
+  flash_writer.printf("%d", LMIC.sysname_crc_err);
+  flash_writer.print("\n");
 }
 
 static void rxdone_func(osjob_t *job)
@@ -135,11 +131,41 @@ static void rx_func(osjob_t *job)
   rx(rxdone_func);
 }
 
+
+
+
+void wait_for_input_and_print() {
+  unsigned long startTime;
+  const unsigned long timeout = 10000; // 10 seconds in milliseconds
+  bool inputReceived = false;
+  startTime = millis(); // Record the start time
+  while (true) {
+    if (Serial.available() > 0 && millis() - startTime < timeout) {
+      String input = Serial.readStringUntil('\n');
+      input.trim(); // Remove any trailing newline or carriage return characters
+      inputReceived = true;
+      Serial.println("Reading all of flash...");
+      break;
+    } else if (millis() - startTime >= timeout && !inputReceived) {
+      Serial.println("No input received within 10 seconds. Moving on...");
+      inputReceived = true;
+    }
+  }
+
+  FlashReader flash_reader = FlashReader();
+  while (flash_reader.current_sector <= flash_reader.max_sector)
+  {
+    Serial.print(flash_reader.read());
+  }
+}
+
 // application entry point
 void setup()
 {
   Serial.begin(2000000);
   pinMode(LED_BUILTIN, OUTPUT);
+  while (!Serial)
+    ;
   // initialize runtime env
   os_init();
 
@@ -152,9 +178,16 @@ void setup()
   LMIC.sysname_tx_rps = MAKERPS(SF8, BW125, CR_4_8, 0, 0);
   LMIC.txpow = 21;
   LMIC.radio_txpow = 21; // WCSNG
-
   Serial.flush();
-  Serial.println("Hi, this is gateway rx");
+
+  wait_for_input_and_print();
+
+  // Set up flash writer
+  flash_writer = FlashWriter();
+
+  Serial.println("Reference gateway initialized.");
+
+
 
   // setup initial job
   os_setCallback(&arbiter_job, rx_func);
